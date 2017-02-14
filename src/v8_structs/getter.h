@@ -5,7 +5,7 @@ template<typename T>
 template<typename TYPE> 
 	struct hedon_getter<TYPE *>{
 		static TYPE * get(const v8::Local<v8::Value> &i){
-			long int m = i->NumberValue();
+			int64_t m = i->NumberValue();
 			TYPE * p  = (TYPE *)m;
 			return p;
 		};
