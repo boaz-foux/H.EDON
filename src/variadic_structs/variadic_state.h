@@ -1,0 +1,1 @@
+template< typename ... ARGS> struct variadic_state {};
