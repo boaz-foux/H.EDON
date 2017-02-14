@@ -4,7 +4,8 @@ template<typename TYPE >
 template<typename TYPE> 
 	struct hedon_setter<TYPE *>{ 
 		static v8::Local<v8::Value> set(v8::Isolate * isolate ,TYPE  * data){ 
-			return v8::Number::New(isolate,(int)data); 
+			int64_t i = (int64_t)data;
+			return v8::Number::New(isolate,i); 
 		}; 
 	};
 
