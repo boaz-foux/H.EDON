@@ -17,6 +17,7 @@ template<> \
 		}; \
 	}
 
+SETTER(char * ,v8::String::NewFromUtf8);
 SETTER(bool,v8::Boolean::New);
 SETTER(float,v8::Number::New);
 SETTER(double,v8::Number::New);
