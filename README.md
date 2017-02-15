@@ -30,8 +30,20 @@ hedon should be include in the following hierarchy
 
 for simple include all is needed is just a one line:
 ``` cpp
-NODE_SET_METHOD(exports, "hello", HEDON::BIND(function) );
+double function(float i , double j, int k);
+
+/*
+    ...
+*/
+
+void Init( v8::Handle<v8::Object> exports) {
+    NODE_SET_METHOD(exports, "example", HEDON::BIND(function) );
+  }
+NODE_MODULE(hello, Init);
+
 ```
+
+
 getters add setters are adjustable like so:
 ``` cpp
 CLASS_TYPE get(const v8::Local<v8::Value> & input){ /* ... */ }
