@@ -12,6 +12,14 @@ template<typename TYPE>
 	};
 
 template<> 
+	struct hedon_getter<char *>{
+		static char *  get(const v8::Local<v8::Value> &i){
+			v8::String::Utf8Value str(i);
+			return *str;
+		};
+	};
+
+template<> 
 	struct hedon_getter<bool>{
 		static bool  get(const v8::Local<v8::Value> &i){
 			return i->BooleanValue();

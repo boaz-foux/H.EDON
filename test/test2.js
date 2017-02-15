@@ -2,6 +2,7 @@ describe('tester2 - pointers', ()=>{
 	before((next)=>{
 		try{
 			testers.tester2.getString.here;
+			testers.tester2.getString2.here;
 			testers.tester2.getPointer.here;
 			testers.tester2.getValue.here;
 			testers.tester2.getValueFromPointer.here;
@@ -22,9 +23,15 @@ describe('tester2 - pointers', ()=>{
 	});
 
 	describe('char pointer test:', ()=>{
-		const fn = testers.tester2.getString.bind(testers.tester2);
+		const fn = testers.tester2.getString.bind(testers.tester2),
+			  fn2 = testers.tester2.getString2.bind(testers.tester2);
 		it('should return a string and NOT a pointer value', (done)=>{
 			expect( fn()  ).to.be.equal("this is a string");
+			done();
+		});
+		
+		it('should return the same string', (done)=>{
+			expect( fn2('hello :)')  ).to.be.equal('hello :)');
 			done();
 		});
 	});
