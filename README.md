@@ -5,7 +5,7 @@ this project was established to make life easier & simpler for the little worker
 - is node.h spelled backwards
 - the mentality behind this project is to achieve a the hedonistic way of code by maximize the pleasure and the simplicity, and to minimize the headaches and the complexity.
 
-for easy implamentation just run in you project direcotry:
+for easy implementation just run in you project directory:
 ``` bash
 $ npm install --save hedonh
 ```
