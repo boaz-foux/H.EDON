@@ -1,9 +1,15 @@
-# HEDON.H
+# HEDON
 this project was established to make life easier & simpler for the little worker who need to bind c++ with node.
+
+#### the meaning of HEDON:
+- is node.h spelled backwards
+- the mentality behind this project is to achieve a the hedonistic way of code by maximize the pleasure and the simplicity, and to minimize the headaches and the complexity.
+
 for easy implamentation just run in you project direcotry:
 ``` bash
 $ npm install --save hedonh
 ```
+
 to add (#include "hedon.h") for easy include in your .cpp files,
 all is needed is to add the following lines to binding.gyp : 
 ``` json
