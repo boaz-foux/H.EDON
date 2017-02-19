@@ -4,6 +4,8 @@ template<typename RTYPE ,typename FNTYPE,FNTYPE fn >
 			RTYPE _return;
 			char * msg = hedon_validator<FNTYPE>::check(v8args);// str.data()
 			v8::Isolate * isolate =  v8args.GetIsolate();
+			hedon_memory <FNTYPE,fn>::v8args = 
+					(v8::FunctionCallbackInfo<v8::Value> *) &v8args;
 			if(msg){
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate,msg));
 			}
@@ -17,6 +19,8 @@ template<typename FNTYPE,FNTYPE fn >
 		static void bind(CONST_ARGUMENTS_REFERENCE){
 			char * msg = hedon_validator<FNTYPE>::check(v8args);
 			v8::Isolate * isolate =  v8args.GetIsolate();
+			hedon_memory <FNTYPE,fn>::v8args = 
+					(v8::FunctionCallbackInfo<v8::Value> *) &v8args;
 			if(msg){
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate,msg));
 			}
