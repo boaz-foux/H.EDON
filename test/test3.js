@@ -131,8 +131,7 @@ describe('tester3 - function callbacks', ()=>{
 	});
 	describe('function pointer., i ,char *(p)(i) -> p(i)',()=>{
 		const fn = testers.tester3.callbackChar.bind(testers.tester3),
-		messages = [ 'shou', 'ld re', 'turn d', 'iffre', 'nt mess',
-					'ages w','ith dif','frent in','de','xs'];
+		messages = strings(50);
 		it( 'should return diffrent messages with diffrent index' ,(done)=>{ 
 			messages.forEach((data,index)=>{
 				expect( fn(index,(i) => messages[i]) ).to.be.equal( data );

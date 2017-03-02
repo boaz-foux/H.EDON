@@ -47,7 +47,8 @@ const
 		return array;
 	},
 	toInt = global.toInt = i => Math.floor( Number(i).toFixed(0)),
-	randomString = global.string = ()=> Date.now().toString(  toInt( random(36,16) ) ), 
+	randomString = global.string = ()=> Date.now().toString(  toInt( random(36,16) ) ),
+	randomStrings = global.strings = (n) => [...Array(n)].map(randomString),
 	cases = global.cases =  function(){
 		const arr = [...arguments];
 		switch(true){
