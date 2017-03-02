@@ -4,7 +4,7 @@ this project was established to make life easier & simpler for the little worker
 #### the meaning of HEDON:
 - is node.h spelled backwards.
 - the mentality behind this project is to achieve a the hedonistic way of code by maximize the pleasure and the simplicity, and to minimize the headaches and the complexity.
-- HEDON is build with variadic templates and doesn't inforce you to maintain the interface code, for every change in the core.  
+- HEDON is built with variadic templates and doesn't inforce you to maintain the interface code, for every change in the core.  
 
 for easy implementation just run in you project directory:
 ``` bash
