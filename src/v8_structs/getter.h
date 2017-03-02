@@ -20,6 +20,13 @@ template<>
 	};
 
 template<> 
+	struct hedon_getter<void>{
+		static void  get(const v8::Local<v8::Value> &i){
+			return;
+		};
+	};
+
+template<> 
 	struct hedon_getter<bool>{
 		static bool  get(const v8::Local<v8::Value> &i){
 			return i->BooleanValue();

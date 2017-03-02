@@ -37,6 +37,8 @@ jspm_packages
 .node_repl_history
 
 tmp/
+.idea/
+tmp/
 test/
 bintest/
 test.init.js

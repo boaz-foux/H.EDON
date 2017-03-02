@@ -1,5 +1,8 @@
 template<typename T> 
-	struct variadic_return_identifier{};
+	struct variadic_return_identifier{
+		typedef bool r;
+	};
+
 
 template<typename R > 
 	struct variadic_return_identifier<R()>{

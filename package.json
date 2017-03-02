@@ -1,6 +1,6 @@
 {
   "name": "hedonh",
-  "version": "0.0.8-beta",
+  "version": "0.1.0",
   "description": "an elastic header file for a simple and elastic binding.",
   "main": "index.js",
   "scripts": {
