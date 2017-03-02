@@ -2,8 +2,9 @@
 this project was established to make life easier & simpler for the little worker who need to bind c++ with node.
 
 #### the meaning of HEDON:
-- is node.h spelled backwards
+- is node.h spelled backwards.
 - the mentality behind this project is to achieve a the hedonistic way of code by maximize the pleasure and the simplicity, and to minimize the headaches and the complexity.
+- HEDON is build with variadic templates and doesn't inforce you to maintain the interface code, for every change in the core.  
 
 for easy implementation just run in you project directory:
 ``` bash
@@ -55,3 +56,22 @@ v8::Local<v8::Value> set(v8::Isolate * isolate ,CLASS_TYPE _class) { /* ... */ }
 HEDON::GETTER(CLASS_TYPE ,get);
 HEDON::SETTER(CLASS_TYPE ,set);
 ``` 
+
+HEDON also support the bindings of a function that returns an array with a fixed size:
+``` cpp
+float array [] = {5,6,7,88};
+float * function_that_return_arr(){
+	return array;
+}
+
+/*
+    ...
+*/
+    NODE_SET_METHOD(exports,
+     	"example",
+     	 HEDON::BIND_ARRAY(function_that_return_arr ,4 /*number of elements*/ ) 
+/*
+    ...
+*/
+```
+

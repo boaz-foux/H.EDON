@@ -18,7 +18,7 @@ template< int INDEX,
 struct hedon_caller<INDEX ,R(V),fn>{
 	typedef R(fntype)(V);
 	static R bind (CONST_ARGUMENTS_REFERENCE ){
-			return fn(hedon_getter_wrapper<fntype,fn,INDEX,V>::get(v8args));
+			return fn(hedon_getter_wrapper<fntype,fn,V,INDEX>::get(v8args));
 		};
 };
 
@@ -30,8 +30,8 @@ struct hedon_caller<INDEX ,R(V0,V1),fn>{
 	typedef R(fntype)(V0,V1);
 	static R bind (CONST_ARGUMENTS_REFERENCE ){
 			return 
-				fn(hedon_getter_wrapper<fntype,fn,INDEX,V0>::get(v8args),
-					hedon_getter_wrapper<fntype,fn,INDEX +1,V1>::get(v8args));
+				fn(hedon_getter_wrapper<fntype,fn,V0,INDEX>::get(v8args),
+					hedon_getter_wrapper<fntype,fn,V1,INDEX +1>::get(v8args));
 		};
 };
 
@@ -43,9 +43,9 @@ struct hedon_caller<INDEX ,R(V0,V1,V2),fn>{
 	static R bind (CONST_ARGUMENTS_REFERENCE ){
 		typedef R(fntype)(V0,V1,V2);
 			return
-				fn(hedon_getter_wrapper<fntype,fn,INDEX,V0>::get(v8args),
-					hedon_getter_wrapper<fntype,fn,INDEX +1,V1>::get(v8args),
-					hedon_getter_wrapper<fntype,fn,INDEX +2,V2>::get(v8args));
+				fn(hedon_getter_wrapper<fntype,fn,V0,INDEX>::get(v8args),
+					hedon_getter_wrapper<fntype,fn,V1,INDEX +1>::get(v8args),
+					hedon_getter_wrapper<fntype,fn,V2,INDEX +2>::get(v8args));
 		};
 };
 
@@ -69,7 +69,7 @@ struct hedon_caller
  variadic_state<PRE_ARGS...>,variadic_state<V, POST_ARGS...> >{
  	typedef R(fntype)(PRE_ARGS...,V, POST_ARGS...);
 	static R bind (CONST_ARGUMENTS_REFERENCE,PRE_ARGS...pre_args ){
-			V value = hedon_getter_wrapper<fntype,fn,INDEX,V>::get(v8args);
+			V value = hedon_getter_wrapper<fntype,fn,V,INDEX>::get(v8args);
 			return hedon_caller<INDEX+1,fntype ,fn,variadic_state<PRE_ARGS...,V>, variadic_state<POST_ARGS...> >
 			::bind(v8args,pre_args...,value);
 		};
@@ -82,7 +82,7 @@ template< int INDEX,
 struct hedon_caller<INDEX ,R(V, POST_ARGS...),fn>{
 	typedef R(fntype)(V, POST_ARGS...);
 	static R bind (CONST_ARGUMENTS_REFERENCE ){
-			V value = hedon_getter_wrapper<fntype,fn,INDEX,V>::get(v8args);
+			V value = hedon_getter_wrapper<fntype,fn,V,INDEX>::get(v8args);
 			return hedon_caller<INDEX+1,fntype ,fn,variadic_state<V>, variadic_state<POST_ARGS...> >
 			::bind(v8args,value);
 		};
