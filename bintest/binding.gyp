@@ -8,6 +8,9 @@
     },{
       "target_name": "tester3",
        "sources": [ "./tester3.cc" ]
+    },{
+      "target_name": "tester4",
+       "sources": [ "./tester4.cc" ]
     }]
 
 }
