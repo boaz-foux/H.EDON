@@ -1,8 +1,8 @@
 template <typename FNTYPE> 
 	struct hedon_validator {};
 
-static char missingArgs [] = "missing arguments!";
-static char toManyArgs [] = "to many arguments!";
+static char missingArgs [] = " missing arguments!";
+static char toManyArgs [] = " to many arguments!";
 
 template <typename R,typename ...VARGS> 
 	struct hedon_validator<R(VARGS...)>  {
