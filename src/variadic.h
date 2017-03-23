@@ -16,7 +16,7 @@ template<>
 	};
 template<typename T, typename... VARGS>
 	struct counter<T, VARGS...> {
-	    static const int i = 1 + counter<VARGS...>::i;
+	    static const int n = 1 + counter<VARGS...>::n;
 	};
 /*
 	index sequence

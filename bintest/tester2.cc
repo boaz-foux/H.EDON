@@ -1,5 +1,6 @@
 
 #include <node.h>
+
 #include "../src/hedon.h"
 
 typedef struct {
@@ -36,7 +37,6 @@ float * getfArray(){
 
 void Init( v8::Handle<v8::Object> exports) {
 	i.data = 502;
-	NODE_SET_METHOD(exports, "getfArray", HEDON::BIND_ARRAY(getfArray,4));
 	NODE_SET_METHOD(exports, "getString", HEDON::BIND(getString));
 	NODE_SET_METHOD(exports, "getString2", HEDON::BIND(getString2));
 	NODE_SET_METHOD(exports, "getValue", HEDON::BIND(getValue));

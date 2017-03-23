@@ -1,7 +1,6 @@
 describe('tester2 - pointers', ()=>{
 	before((next)=>{
 		try{
-			testers.tester2.getfArray.here;
 			testers.tester2.getString.here;
 			testers.tester2.getString2.here;
 			testers.tester2.getPointer.here;
@@ -32,20 +31,10 @@ describe('tester2 - pointers', ()=>{
 		});
 		
 		it('should return the same string', (done)=>{
-			expect( fn2('hello :)')  ).to.be.equal('hello :)');
+			let msg = 'hello :)';
+			expect( fn2(msg)  ).to.be.equal(msg);
 			done();
 		});
 	});
 
-	describe('float pointer test:', ()=>{
-		const fn = testers.tester2.getfArray.bind(testers.tester2);
-		it('should return a float Array and NOT a pointer value', (done)=>{
-			((array)=>{
-				[5,6,7,88].forEach((v,i)=>{
-					expect(array[i]).to.be.equal(v);
-				});
-			})(fn());
-			done();
-		});
-	});
 });
