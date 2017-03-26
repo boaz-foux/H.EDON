@@ -96,8 +96,12 @@ template<>
 		 		return v8::Number::New(ISOLATE,i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
-	 			return std::string();
+	 		std::string validate(const v8::Local<v8::Value> &i){
+	 			std::string str;
+	 			if(!i->IsNumber()){
+	 				str += "invalid value, should be a number.";
+	 			}
+	 			return str;
 	 		}
 	 };
 
@@ -112,8 +116,8 @@ template<>
 		 		return v8::Number::New(ISOLATE,i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
-	 			return std::string();
+	 		std::string validate(const v8::Local<v8::Value> &i){
+	 			return linker<double>::validate(i);
 	 		}
 	 };
 
@@ -128,8 +132,8 @@ template<>
 		 		return v8::Number::New(ISOLATE,i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
-	 			return std::string();
+	 		std::string validate(const v8::Local<v8::Value> &i){
+	 			return linker<double>::validate(i);
 	 		}
 	 };
 
@@ -144,8 +148,8 @@ template<>
 		 		return v8::Number::New(ISOLATE,i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
-	 			return std::string();
+	 		std::string validate(const v8::Local<v8::Value> &i){
+	 			return linker<double>::validate(i);
 	 		}
 	 };
 
@@ -160,8 +164,8 @@ template<>
 		 		return v8::Number::New(ISOLATE,i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
-	 			return std::string();
+	 		std::string validate(const v8::Local<v8::Value> &i){
+	 			return linker<double>::validate(i);
 	 		}
 	 };	 
 
@@ -176,7 +180,7 @@ template<>
 		 		return v8::Boolean::New(ISOLATE,i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
+	 		std::string validate(const v8::Local<v8::Value> &i){
 	 			return std::string();
 	 		}
 	 };

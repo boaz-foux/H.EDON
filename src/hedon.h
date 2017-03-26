@@ -16,7 +16,7 @@ typedef
 
 #define BIND(I) binder<decltype(I),I>::bind
 
-#define BIND_ARRAY(I,N) BIND(I)
+// #define BIND_ARRAY(I,N) BIND(I)
 
 }
 #endif /* ___PURE__HEDON__BIND___H___ */
