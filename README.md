@@ -57,21 +57,4 @@ HEDON::GETTER(CLASS_TYPE ,get);
 HEDON::SETTER(CLASS_TYPE ,set);
 ``` 
 
-HEDON also support the bindings of a function that returns an array with a fixed size:
-``` cpp
-float array [] = {5,6,7,88};
-float * function_that_return_arr(){
-	return array;
-}
-
-/*
-    ...
-*/
-    NODE_SET_METHOD(exports,
-     	"example",
-     	 HEDON::BIND_ARRAY(function_that_return_arr ,4 /*number of elements*/ ) 
-/*
-    ...
-*/
-```
 
