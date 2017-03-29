@@ -62,7 +62,7 @@ describe('tester1 - numbers', ()=>{
 	describe('test10 - int(i,d,f,i,d,f,i,d,f,d)', ()=>{
 		const fn = testers.tester1.test10.bind(testers.tester1);
 		it('should return the correct value of 36', (done)=>{
-			expect(fn(0.5,0.5,4,1,1,1,5,5,0.2,5)).to.be.equal(36);
+			expect(fn(1,0.5,4,1,1,1,5,5,0.2,5)).to.be.equal(36);
 			done();
 		});
 		checkup.length(fn,10);

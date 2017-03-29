@@ -26,14 +26,10 @@ char * getString(){
 	return t;
 }
 
-char * getString2( char * m){
+const char * getString2( const char * m){
 	return m;
 }
 
-float ff [4] =  {5,6,7,88};
-float * getfArray(){
-	return ff;
-}
 
 void Init( v8::Handle<v8::Object> exports) {
 	i.data = 502;
