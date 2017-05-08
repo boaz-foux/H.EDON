@@ -126,7 +126,7 @@ template<typename TYPE>
 	 			return link<TYPE>::getter(i);
 	 		}
 	 	static 
-	 		v8::Local<v8::Value> set(TYPE i){
+	 		v8::Local<v8::Value> set(const TYPE i){
 	 			if(link<TYPE>::setter != NULL){
 	 				return link<TYPE>::setter(i);
 	 			}
@@ -152,6 +152,9 @@ template<typename TYPE>
 		static const char tag [];
 		static 
 			TYPE * get(const v8::Local<v8::Value> &i){
+				if(i->IsNull()){
+					return NULL;
+				}
 				int64_t m = i->NumberValue();
 				TYPE * p  = (TYPE *)m;
 				return p;
@@ -164,7 +167,7 @@ template<typename TYPE>
 	 		static
 	 			std::string validate(const v8::Local<v8::Value> &i){
 	 			std::string str;
-	 			if(!i->IsNumber()){
+	 			if(!i->IsNumber() & !i->IsNull()){
 	 				str += "invalid value, should be a pointer.";
 	 			}
 	 			return str;
@@ -216,6 +219,22 @@ const char linker<unsigned char *>::tag [] = "unsigned char *";
 template<>
 	 struct linker<const unsigned char *>:public linker<unsigned char *>{};
 
+template<>
+	 struct linker<std::string>{
+	 	static const char tag [];
+	 	static std::string get(const v8::Local<v8::Value> &i){
+	 		std::string str;
+	 		str = linker<char*>::get(i);
+			return str;
+	 	}
+	 	static v8::Local<v8::Value> set(const std::string str){
+	 		return v8::String::NewFromUtf8(ISOLATE, str.data());
+	 	}
+	 	static std::string validate(const v8::Local<v8::Value> &i){
+	 		return linker<char*>::validate(i);
+	 	}
+	 };
+const char linker<std::string>::tag [] = "std::string";
 
 template<>
 	 struct linker<double>{
