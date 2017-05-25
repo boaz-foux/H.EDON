@@ -11,7 +11,12 @@ namespace HEDON {
 #define GETTER(C,GET) link<C>::getter = GET
 #define SETTER(C,SET) link<C>::setter = SET
 #define VALIDATOR(C,VALIDATE) link<C>::validator = VALIDATE
+#define TAG(C,TAG) link<C>::tag = TAG
 
+#define ISOLATE v8::Isolate::GetCurrent()
+#define V8ARGS v8::FunctionCallbackInfo<v8::Value>
+
+#define STRING(TXT) v8::String::New( ISOLATE ,TXT)
 /*
 	counter
 */ 
@@ -73,15 +78,11 @@ template <int... Is>
 template <typename ... ARGS > 
 	using  indexes = typename make_sequence< counter<ARGS...>::n >::i;
 
-#define ISOLATE v8::Isolate::GetCurrent()
-#define V8ARGS v8::FunctionCallbackInfo<v8::Value>
+
 typedef 
 	void (* BINDING_FN_TYPE)(const v8::FunctionCallbackInfo<v8::Value> &);
 
-#define ISOLATE v8::Isolate::GetCurrent()
-#define V8ARGS v8::FunctionCallbackInfo<v8::Value>
-typedef 
-	void (* BINDING_FN_TYPE)(const v8::FunctionCallbackInfo<v8::Value> &);
+
 
 template< typename TYPE , TYPE type >struct cache{ };
 
@@ -97,24 +98,24 @@ template<typename FNTYPE,FNTYPE * fn , int...Is>
 
 template<typename TYPE> 
 	struct link{
-	 	static TYPE (*getter)(const v8::Local<v8::Value> &);
-	 	static v8::Local<v8::Value> (*setter)(TYPE);
-	 	static std::string (*validator)(const v8::Local<v8::Value> &);
+	 	static TYPE (*getter)(const v8::Local<v8::Value> &,v8::Isolate *);
+	 	static v8::Local<v8::Value> (*setter)(const TYPE,v8::Isolate *);
+	 	static std::string (*validator)(const v8::Local<v8::Value> &,v8::Isolate *);
 	 	static char * tag;
 	 };
 
 template<typename TYPE> 
 	 TYPE 
 	 	(*link<TYPE>::getter)
-	 		(const v8::Local<v8::Value> &) = nullptr;
+	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
 template<typename TYPE> 
 	 v8::Local<v8::Value>
 	 	(*link<TYPE>::setter)
-	 		(TYPE) = nullptr;
+	 		(TYPE,v8::Isolate *) = nullptr;
 template<typename TYPE> 
 	 std::string 
 	 	(*link<TYPE>::validator)
-	 		(const v8::Local<v8::Value> &) = nullptr;
+	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
 template<typename TYPE> 
 	char * link<TYPE>::tag = nullptr;
 
@@ -123,12 +124,12 @@ template<typename TYPE>
 		static const char tag [];
 	 	static 
 	 		TYPE get(const v8::Local<v8::Value> & i ){
-	 			return link<TYPE>::getter(i);
+	 			return link<TYPE>::getter(i,ISOLATE);
 	 		}
 	 	static 
 	 		v8::Local<v8::Value> set(const TYPE i){
 	 			if(link<TYPE>::setter != nullptr){
-	 				return link<TYPE>::setter(i);
+	 				return link<TYPE>::setter(i,ISOLATE);
 	 			}
 	 			return v8::Undefined(ISOLATE);
 	 		}
@@ -136,7 +137,7 @@ template<typename TYPE>
 	 		std::string validate(const v8::Local<v8::Value> &i){
 	 			std::string str;
 	 			if(link<TYPE>::validator != nullptr){
-	 				str = link<TYPE>::validator(i);
+	 				str = link<TYPE>::validator(i,ISOLATE);
 	 			}
 	 			if(link<TYPE>::getter == nullptr){
 	 				str += "getter function is missing";

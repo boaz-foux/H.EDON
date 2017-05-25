@@ -11,6 +11,9 @@
     },{
       "target_name": "tester4",
        "sources": [ "./tester4.cc" ]
+    },{
+      "target_name": "tester5",
+       "sources": [ "./tester5.cc" ]
     }]
 
 }
