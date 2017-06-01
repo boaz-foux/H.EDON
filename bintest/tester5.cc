@@ -1,3 +1,4 @@
+
 #include <node.h>
 
 #include "../src/hedon.h"
@@ -31,11 +32,14 @@ test1 getter (const v8::Local<v8::Value> &i,v8::Isolate *isolate){
 }
 
 std::string validate (const v8::Local<v8::Value> &in,v8::Isolate *isolate){
+	if(!in->IsObject()){
+	 return "is not an object!";	
+	}
 	std::string rtn;
 	v8::Local<v8::Object> o =  in->ToObject(isolate);
 	v8::Local<v8::String> i = v8::String::NewFromUtf8(isolate,"i"),
 				str = v8::String::NewFromUtf8(isolate,"str");
-	if(o->Get(i)->IsUndefined()){
+	if(o->Get(i)->IsUndefined() || o->Get(i)->IsNull()){
 		rtn = "i : is not defined";
 	}
 	else if(!o->Get(i)-> IsNumber()){

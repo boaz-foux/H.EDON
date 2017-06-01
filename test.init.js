@@ -27,6 +27,7 @@ global.checkup = {
 };
 
 const 
+	lorem = global.lorem = 'lorem ipsum dolor sit amet ac in risus ligula nisl rutrum odio et mattis et lorem ut morbi',
 	fixed = global.fixed = (n,fix)=>{
 		return Number(n.toFixed(fixed));
 	},
