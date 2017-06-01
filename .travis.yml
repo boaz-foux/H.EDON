@@ -3,6 +3,5 @@ node_js:
   - "6.9"
   - "7.1"
 before_script:
-  - npm i node-pre-gyp node-gyp mocha -g
-  - npm run init:build 
-  - npm run test:build
+  - npm i node-pre-gyp node-gyp mocha gulp -g
+  - gulp test
