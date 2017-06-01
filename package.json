@@ -1,13 +1,13 @@
 {
   "name": "hedonh",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "an elastic header file for a simple and elastic binding.",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test:build && npm run test:tmp",
-    "test:build": "cd bintest && node-gyp build && cd ..",
+    "test": "npm run init:build && npm run test:build && npm run test:tmp",
+    "test:build": "cd ./bintest && node-gyp build && cd ..",
     "test:tmp": "mocha",
-    "init:build": "cd bintest && node-gyp configure build && cd ..  "
+    "init:build": "cd ./bintest && node-gyp configure build && cd ..  "
   },
   "repository": {
     "type": "git",
@@ -37,5 +37,8 @@
     "gulp-shell": "^0.5.2",
     "mocha": "^3.2.0",
     "yargs": "^6.6.0"
+  },
+  "engines" : { 
+    "node" : "6.x" 
   }
 }

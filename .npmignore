@@ -42,3 +42,4 @@ tmp/
 test/
 bintest/
 test.init.js
+.travis.yml
