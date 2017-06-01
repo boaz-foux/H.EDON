@@ -1,6 +1,6 @@
 {
   "name": "hedonh",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "an elastic header file for a simple and elastic binding.",
   "main": "index.js",
   "scripts": {
@@ -37,8 +37,5 @@
     "gulp-shell": "^0.5.2",
     "mocha": "^3.2.0",
     "yargs": "^6.6.0"
-  },
-  "engines" : { 
-    "node" : "6.x" 
   }
 }
