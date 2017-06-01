@@ -604,5 +604,5 @@ void (*binder<void(ARGS...),fn>::bind) (const V8ARGS & arguments)
 				::rfn>::bind;
 
 
-};
+}
 #endif /* ___PURE__HEDON__BIND___H___ */
