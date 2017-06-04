@@ -43,13 +43,13 @@ namespace HEDON {
 /*
 	counter
 */ 
-template< auto ... ARGS> 
+template< typename ... ARGS> 
 	struct counter {};
 template<>
 	struct counter<> {
 	    static const int n = 0;
 	};
-template<auto T, class... VARGS>
+template<typename T, typename... VARGS>
 	struct counter<T, VARGS...> {
 	    static const int n = 1 + counter<VARGS...>::n;
 	};
@@ -58,8 +58,9 @@ template<auto T, class... VARGS>
 */
 template <int...> struct sequence {};
 
-template <auto S1, auto S2> struct concat_sequence;
-template <auto S1, auto S2> using  concat_sequence_t = typename concat_sequence<S1, S2>::i;
+template <typename S1, typename S2> struct concat_sequence;
+template <typename S1, typename S2> 
+	using  concat_sequence_t = typename concat_sequence<S1, S2>::i;
 
 template <int... I1, int... I2>
 	struct concat_sequence<sequence<I1...>, sequence<I2...> > {
@@ -98,7 +99,7 @@ template <int... Is>
 /*
 	indexes 
 */
-template <auto ... ARGS > 
+template <typename ... ARGS > 
 	using  indexes = typename make_sequence< counter<ARGS...>::n >::i;
 
 
@@ -107,19 +108,19 @@ typedef
 
 
 
-template< auto TYPE , TYPE type >struct cache{ };
+template< typename TYPE , TYPE type >struct cache{ };
 
-template<auto FNTYPE,FNTYPE * fn , int ...Is>
+template<typename FNTYPE,FNTYPE * fn , int ...Is>
 	struct callback_cache {
 		static v8::Persistent<v8::Function> callback;
 	};
 
-template<auto FNTYPE,FNTYPE * fn , int...Is>
+template<typename FNTYPE,FNTYPE * fn , int...Is>
 	 v8::Persistent<v8::Function>
 	 callback_cache<FNTYPE,fn,Is...>::callback;
 
 
-template<auto TYPE> 
+template<typename TYPE> 
 	struct link{
 	 	static TYPE (*getter)(const v8::Local<v8::Value> &,v8::Isolate *);
 	 	static v8::Local<v8::Value> (*setter)(const TYPE,v8::Isolate *);
@@ -127,22 +128,22 @@ template<auto TYPE>
 	 	static char * tag;
 	 };
 
-template<auto TYPE> 
+template<typename TYPE> 
 	 TYPE 
 	 	(*link<TYPE>::getter)
 	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
-template<auto TYPE> 
+template<typename TYPE> 
 	 v8::Local<v8::Value>
 	 	(*link<TYPE>::setter)
 	 		(TYPE,v8::Isolate *) = nullptr;
-template<auto TYPE> 
+template<typename TYPE> 
 	 std::string 
 	 	(*link<TYPE>::validator)
 	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
-template<auto TYPE> 
+template<typename TYPE> 
 	char * link<TYPE>::tag = nullptr;
 
-template<auto TYPE> 
+template<typename TYPE> 
 	struct linker{
 		static const char tag [];
 	 	static 
@@ -168,10 +169,10 @@ template<auto TYPE>
 	 			return str;
 	 		}
 	 };
-template<auto TYPE> 
+template<typename TYPE> 
 const char linker<TYPE >::tag [] = "unknown";
 
-template<auto TYPE> 
+template<typename TYPE> 
 	struct linker<TYPE *>{
 		static const char tag [];
 		static 
@@ -196,7 +197,7 @@ template<auto TYPE>
 	 			return str;
 	 		} 
 	};
-template<auto TYPE> 
+template<typename TYPE> 
 const char linker<TYPE  *>::tag [] = "pointer";
 
 template<>
@@ -398,7 +399,7 @@ template<>
 	 struct linker<const bool>:public linker<bool>{};
 
 
-template<auto TYPE> 
+template<typename TYPE> 
 	 struct unvoid {
 		 typedef TYPE type;
 	};
@@ -407,7 +408,7 @@ template<>
 		 typedef bool type;
 	};
 
-// template<auto TYPE> 
+// template<typename  TYPE> 
 // 	 using void_wrapper =  typename unvoid<TYPE>::type;
 
 
@@ -429,13 +430,13 @@ template<>
 	 };
 const char linker<void>::tag [] = "void";
 
-template<auto TYPE> 
+template<typename TYPE> 
 	struct linker<const TYPE>:linker<TYPE>{};
 
-template<auto FNTYPE , FNTYPE fn ,auto TYPE , int ...Is> 
+template<typename FNTYPE , FNTYPE fn ,typename TYPE , int ...Is> 
 	struct linker_t : public linker<TYPE>{};
 
-template<auto FNTYPE , FNTYPE fn ,auto R, auto ...ARGS ,int ...Is >
+template<typename FNTYPE , FNTYPE fn ,typename R, typename ...ARGS ,int ...Is >
 struct linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
 	typedef R(&rtntype)(ARGS...);
 		 static 
@@ -480,7 +481,7 @@ std::string toString(int i){
 	return str;
 }
 
-template<auto TYPE, TYPE data> 
+template<typename  TYPE, TYPE data> 
 	 struct binder_t {
 	 	static 
 	 		void bind (const V8ARGS & arguments) {
@@ -491,7 +492,7 @@ template<auto TYPE, TYPE data>
 	 		};
 	 };
 
-template<auto TYPE, int N, TYPE (&array)[N]> 
+template<typename  TYPE, int N, TYPE (&array)[N]> 
 	 struct binder_t<TYPE[N],array>{
 	 	static 
 	 		void bind (const V8ARGS & arguments) {
@@ -507,7 +508,7 @@ template<auto TYPE, int N, TYPE (&array)[N]>
 				.Set(v8Array);
 	 		};
 	};
-template<auto R, auto ...ARGS, R(*fn)(ARGS...)>
+template<typename  R, typename  ...ARGS, R(*fn)(ARGS...)>
 	struct binder_t<R(ARGS...),fn>{
 		typedef R(fntype)(ARGS...);
 		static 
@@ -588,9 +589,9 @@ template<auto R, auto ...ARGS, R(*fn)(ARGS...)>
 			};
 	};
 
-template<auto TYPE, TYPE data> struct binder :public binder_t<TYPE,data> {};
+template<class TYPE, TYPE data> struct binder :public binder_t<TYPE,data> {};
 
-template< auto ...ARGS, void(*fn)(ARGS...)>
+template< typename ...ARGS, void(*fn)(ARGS...)>
 struct binder<void(ARGS...),fn> {
 		static void (*bind) (const V8ARGS & arguments) ;
 		static unvoid<void>::type rfn (ARGS... args){
@@ -598,7 +599,7 @@ struct binder<void(ARGS...),fn> {
 			return true;
 		}
 };
-template< auto ...ARGS, void(*fn)(ARGS...)>
+template< typename ...ARGS, void(*fn)(ARGS...)>
 void (*binder<void(ARGS...),fn>::bind) (const V8ARGS & arguments) 
 	=  binder_t<bool(ARGS...),binder<void(ARGS...),fn>
 				::rfn>::bind;
