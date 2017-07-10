@@ -4,7 +4,7 @@
   "description": "an elastic header file for a simple and elastic binding.",
   "main": "index.js",
   "scripts": {
-    "test": "npm run init:build && npm run test:build && npm run test:tmp",
+    "test": "npm run test:tmp",
     "test:build": "cd ./bintest && node-gyp build && cd ..",
     "test:tmp": "mocha",
     "init:build": "cd ./bintest && node-gyp configure build && cd ..  "
