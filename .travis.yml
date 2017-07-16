@@ -12,10 +12,11 @@ env:
 
 matrix:
     exclude:
-    - os: linux
-      env: CC=clang CXX=clang
     - os: osx
       env: CC=gcc-4.8 CXX=g++-4.8
+    - os: linux
+      env: CC=clang CXX=clang
+
 addons:
   apt:
     sources:
