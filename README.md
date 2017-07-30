@@ -57,4 +57,8 @@ HEDON::GETTER(CLASS_TYPE ,get);
 HEDON::SETTER(CLASS_TYPE ,set);
 ``` 
 
-HEDON has been tasted on OS X  ( el capitan )
+HEDON has been developed on OS X  ( el capitan ) , 
+Currently we have a small bug with functions that return char pointers on linux that will be solved soon.
+
+
+
