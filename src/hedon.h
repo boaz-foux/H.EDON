@@ -106,18 +106,24 @@ typedef
 	void (* BINDING_FN_TYPE)(const v8::FunctionCallbackInfo<v8::Value> &);
 
 
+/*
+	caching
+*/
+template<typename FNTYPE,FNTYPE * fn ,typename TYPE, int ...Is>
+	struct cache{ 
+		static TYPE cached;
+	};
+template<typename FNTYPE,FNTYPE * fn,typename TYPE , int...Is>
+	 TYPE  cache<FNTYPE,fn,TYPE,Is...>::cached;
 
-template< typename TYPE , TYPE type >struct cache{ };
 
 template<typename FNTYPE,FNTYPE * fn , int ...Is>
-	struct callback_cache {
-		static v8::Persistent<v8::Function> callback;
-	};
+	struct callback_cache
+		: cache<FNTYPE,fn ,v8::Persistent<v8::Function>, Is...> {};
 
-template<typename FNTYPE,FNTYPE * fn , int...Is>
-	 v8::Persistent<v8::Function>
-	 callback_cache<FNTYPE,fn,Is...>::callback;
-
+/*
+	linking
+*/
 
 template<typename TYPE> 
 	struct link{
