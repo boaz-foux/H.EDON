@@ -1,4 +1,4 @@
-# HEDON ![alt text](https://travis-ci.org/boazfoux/HEDON.svg?branch=master)
+# HEDON [![hedon tests](https://travis-ci.org/boazfoux/HEDON.svg?branch=master)](https://travis-ci.org/boazfoux/HEDON/branches)
 this project was established to make life easier & simpler for the little worker who need to bind c++ with node.
 
 #### the meaning of HEDON:
