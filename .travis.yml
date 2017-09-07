@@ -12,9 +12,9 @@ addons:
 
       
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CC=/usr/local/clang-3.4/bin/clang;fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CXX=/usr/local/clang-3.4/bin/clang++;fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LINK=/usr/local/clang-3.4/bin/clang++;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CC=clang;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CXX=clang++;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LINK=clang++;fi
   - g++ -v
   - clang -v
   - npm install -g node-gyp@latest
