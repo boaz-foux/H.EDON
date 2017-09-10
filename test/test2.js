@@ -30,10 +30,7 @@ describe('tester2 - pointers', ()=>{
 			done();
 		});
 		
-		it('should return the same string', function(done){
-			/*#TODO: remove when fix return char bug! */
-			if(require('os').type() ==='Linux'){ return this.skip(); }
-			/*#TODO: remove when fix return char bug! */
+		it('should return the same string', (done) => {
 			let msg = 'hello :)';
 			expect( fn2(msg)  ).to.be.equal(msg);
 			done();
