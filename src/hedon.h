@@ -106,18 +106,24 @@ typedef
 	void (* BINDING_FN_TYPE)(const v8::FunctionCallbackInfo<v8::Value> &);
 
 
+/*
+	caching
+*/
+template<typename FNTYPE,FNTYPE * fn ,typename TYPE, int ...Is>
+	struct cache{ 
+		static TYPE cached;
+	};
+template<typename FNTYPE,FNTYPE * fn,typename TYPE , int...Is>
+	 TYPE  cache<FNTYPE,fn,TYPE,Is...>::cached;
 
-template< typename TYPE , TYPE type >struct cache{ };
 
 template<typename FNTYPE,FNTYPE * fn , int ...Is>
-	struct callback_cache {
-		static v8::Persistent<v8::Function> callback;
-	};
+	struct callback_cache
+		: cache<FNTYPE,fn ,v8::Persistent<v8::Function>, Is...> {};
 
-template<typename FNTYPE,FNTYPE * fn , int...Is>
-	 v8::Persistent<v8::Function>
-	 callback_cache<FNTYPE,fn,Is...>::callback;
-
+/*
+	linking
+*/
 
 template<typename TYPE> 
 	struct link{
@@ -200,6 +206,27 @@ template<typename TYPE>
 const char linker<TYPE  *>::tag [] = "pointer";
 
 template<>
+	 struct linker<std::string>{
+	 	static const char tag [];
+	 	static std::string get(const v8::Local<v8::Value> &i){
+	 		v8::String::Utf8Value str(i);
+			return std::string(*str);
+	 	}
+	 	static v8::Local<v8::Value> set(const std::string & str){
+	 		return v8::String::NewFromUtf8(ISOLATE, str.data());
+	 	}
+	 	static std::string validate(const v8::Local<v8::Value> &i){
+	 		std::string str;
+	 		if(!i->IsString()){
+	 				str += "invalid value, should be a string.";
+	 			}
+	 		return str;
+	 	}
+	 };
+const char linker<std::string>::tag [] = "std::string";
+
+
+template<>
 	 struct linker<char *>{
 	 	static const char tag [];
 	 	static char * get(const v8::Local<v8::Value> &i){
@@ -210,14 +237,11 @@ template<>
 	 		return v8::String::NewFromUtf8(ISOLATE, data);
 	 	}
 	 	static std::string validate(const v8::Local<v8::Value> &i){
-	 		std::string str;
-	 		if(!i->IsString()){
-	 				str += "invalid value, should be a string.";
-	 			}
-	 		return str;
+	 		return linker<std::string>::validate(i);
 	 	}
 	 };
 const char linker<char *>::tag [] = "char *";
+
 template<>
 	 struct linker<const char *>:public linker<char *>{};
 
@@ -242,20 +266,6 @@ const char linker<unsigned char *>::tag [] = "unsigned char *";
 template<>
 	 struct linker<const unsigned char *>:public linker<unsigned char *>{};
 
-template<>
-	 struct linker<std::string>{
-	 	static const char tag [];
-	 	static std::string get(const v8::Local<v8::Value> &i){
-			return linker<char*>::get(i);
-	 	}
-	 	static v8::Local<v8::Value> set(const std::string str){
-	 		return v8::String::NewFromUtf8(ISOLATE, str.data());
-	 	}
-	 	static std::string validate(const v8::Local<v8::Value> &i){
-	 		return linker<char*>::validate(i);
-	 	}
-	 };
-const char linker<std::string>::tag [] = "std::string";
 
 template<>
 	 struct linker<double>{
@@ -398,19 +408,6 @@ template<>
 	 struct linker<const bool>:public linker<bool>{};
 
 
-template<typename TYPE> 
-	 struct unvoid {
-		 typedef TYPE type;
-	};
-template<> 
-	 struct unvoid<void> {
-		 typedef bool type;
-	};
-
-template<typename TYPE> 
-	 using void_wrapper =  typename unvoid<TYPE>::type;
-
-
 template<>
 	 struct linker<void>{
 	 	static const char tag [];
@@ -432,34 +429,140 @@ const char linker<void>::tag [] = "void";
 template<typename TYPE> 
 	struct linker<const TYPE>:linker<TYPE>{};
 
+
 template<typename FNTYPE , FNTYPE fn ,typename TYPE , int ...Is> 
 	struct linker_t : public linker<TYPE>{};
 
+template<typename FNTYPE , FNTYPE fn ,int ...Is >
+struct linker_t<FNTYPE,fn,std::string,Is...>{
+	static std::string 
+		get(const v8::Local<v8::Value> & i){ 
+			return cache<FNTYPE,fn,std::string,Is...>::cached 
+			 		= linker<std::string>::get(i);
+		};
+	static 
+	 	std::string validate(const v8::Local<v8::Value> &){
+	 			return std::string();
+	 		}
+};
+
+/*
+	replacing
+*/ 
+template<typename TYPE> 
+	struct replace_suggestion{
+		typedef TYPE suggestion;
+	};
+template<> 
+	struct replace_suggestion<void>{
+		typedef bool suggestion;
+	};
+
+template<> 
+	struct replace_suggestion<char *>{
+		typedef const std::string suggestion;
+	};
+template<> 
+	struct replace_suggestion<const char *>{
+		typedef const std::string suggestion;
+	};
+
+
+template<typename SRC, typename DEST> 
+	struct replacer;
+
+template<> 
+	struct replacer<void,bool>{
+		static bool replace (bool i = false){ return false; }
+	};
+
+template<> 
+	struct replacer<bool, void>{
+		static void replace (bool i = false){ return ; }
+	};
+
+
+template<typename SRC> 
+	struct replacer<SRC , const std::string >{
+		static  std::string replace (SRC  src){
+		 return std::string(src); 
+		}
+	};
+
+template<typename DEST> 
+	struct replacer<const std::string ,DEST>{
+		static DEST replace (const std::string & src){
+		 return (DEST)src.data(); 
+		}
+	};
+
+template<typename SRC> 
+	struct replacer<SRC,SRC>{
+		static SRC replace (SRC src){ return src; }
+	};
+
+template<typename FNTYPE,FNTYPE * fn ,typename SRC, typename DEST,int ...Is>
+	struct replacer_cache :replacer<SRC,DEST> {};
+
+template<typename FNTYPE,FNTYPE * fn , typename DEST,int ...Is>
+	struct replacer_cache<FNTYPE,fn ,const std::string,DEST, Is...>{
+		static DEST replace (const std::string & src){
+		 return replacer<const std::string ,DEST>::replace(
+		 	cache<FNTYPE,fn ,std::string, Is...>::cached = src
+		 	); 
+		}
+	};
+
+template<typename FNTYPE,FNTYPE * fn , typename SRC,int ...Is>
+	struct replacer_cache<FNTYPE,fn ,SRC,const std::string, Is...>{
+		static  std::string replace (SRC  src){
+		 return replacer<SRC ,const std::string >::replace(
+		 	cache<FNTYPE,fn ,SRC, Is...>::cached = src
+		 	); 
+		}
+	};
+
+template< typename M>
+	using suggest =
+		 typename replace_suggestion<M>::suggestion;
+
+/*
+	linker
+*/
 template<typename FNTYPE , FNTYPE fn ,typename R, typename ...ARGS ,int ...Is >
 struct linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
 	typedef R(&rtntype)(ARGS...);
 		 static 
 	 		rtntype get(const v8::Local<v8::Value> & i){
 	 			v8::Local<v8::Function> callback = v8::Local<v8::Function>::Cast(i);
-	 			callback_cache<FNTYPE,fn,Is...>::callback.Reset(ISOLATE,callback);
+	 			callback_cache<FNTYPE,fn,Is...>::cached.Reset(ISOLATE,callback);
 	 			return linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>::wrapper;
 	 		}
 	 	static 
 	 		R wrapper (ARGS...args){
-	 			int argc = counter<ARGS...>::n ;
+	 			//indexes<ARGS...>()
+	 		return	replacer_cache< FNTYPE,fn,suggest<R>,R ,-1>::replace(
+	 					call(replacer< ARGS , suggest<ARGS> > ::replace(args)...)
+	 				);
+	 		}
+
+
+		static suggest<R> call(suggest<ARGS> ... args ){
+			int argc = counter<ARGS...>::n ;
 	 			v8::Handle<v8::Value> argv [] = { 
-					linker<ARGS>::set(args)...  
+					linker<suggest<ARGS>>::set(args)...  
 				};
 				v8::Local<v8::Function> 
 					callback = v8
 						::Local<v8::Function>
 						::New(ISOLATE,
-							callback_cache<FNTYPE,fn,Is...>::callback);
-				return linker<R>::get(callback->Call(
+							callback_cache<FNTYPE,fn,Is...>::cached);
+				return linker< suggest<R> >::get(callback->Call(
 											v8::Null(ISOLATE),
 											argc,
 											argv));
-	 		}
+
+		};
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &){
 	 			return std::string();
@@ -470,7 +573,7 @@ std::string toString(int i){
 	std::string str;
 	if(i<0){
 		str = '-';
-		return str + toString(-i);
+		i = -i;
 	}
 	do{
 		char c =  '0' + (i%10);
@@ -479,6 +582,7 @@ std::string toString(int i){
 	}while(i);
 	return str;
 }
+
 
 template<typename TYPE, TYPE data> 
 	 struct binder_t {
@@ -507,7 +611,7 @@ template<typename TYPE, int N, TYPE (&array)[N]>
 				.Set(v8Array);
 	 		};
 	};
-template<typename R, typename ...ARGS, R(*fn)(ARGS...)>
+template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 	struct binder_t<R(ARGS...),fn>{
 		typedef R(fntype)(ARGS...);
 		static 
@@ -590,18 +694,44 @@ template<typename R, typename ...ARGS, R(*fn)(ARGS...)>
 
 template<typename TYPE, TYPE data> struct binder :public binder_t<TYPE,data> {};
 
-template< typename ...ARGS, void(*fn)(ARGS...)>
-struct binder<void(ARGS...),fn> {
-		static void (*bind) (const V8ARGS & arguments) ;
-		static unvoid<void>::type rfn (ARGS... args){
-			fn(args...);
-			return true;
-		}
+template< typename R ,typename ...ARGS, R(&&fn)(ARGS...)>
+struct binder<R(ARGS...),fn> {
+		typedef suggest<R>(fntype)(suggest<ARGS> ...);
+
+		static void bind (const V8ARGS & arguments) {
+			return binder_t<fntype,binder<R(ARGS...),fn>::wrap>::bind(arguments);
+		};
+		
+		static suggest<R> wrap(suggest<ARGS> ... args){
+			return binder<R(ARGS...),fn>::call(args... , indexes<ARGS...>() );
+		};
+		template<int ...Is> 
+		static suggest<R> call(suggest<ARGS> ... args ,sequence<Is...>){
+			return replacer_cache< R(ARGS...),fn,R, suggest<R> ,-1>::replace(
+				fn( 
+					replacer_cache< R(ARGS...),fn, suggest<ARGS> ,ARGS,Is >::replace(args)...
+					)
+				 );
+		};
 };
-template< typename ...ARGS, void(*fn)(ARGS...)>
-void (*binder<void(ARGS...),fn>::bind) (const V8ARGS & arguments) 
-	=  binder_t<bool(ARGS...),binder<void(ARGS...),fn>
-				::rfn>::bind;
+template< typename ...ARGS, void(&&fn)(ARGS...)>
+struct binder<void(ARGS...),fn> {
+		template< typename M>
+			using suggest =
+				 typename replace_suggestion<M>::suggestion;
+
+		typedef suggest<void>(fntype)(suggest<ARGS> ...);
+
+		static void bind (const V8ARGS & arguments) {
+			return binder<fntype,binder<void(ARGS...),fn>::wrap>::bind(arguments);
+		};
+		
+		static suggest<void> wrap(suggest<ARGS> ... args){
+			fn( replacer< suggest<ARGS> ,ARGS  >::replace(args)...);
+			return replacer< void,suggest<void> >::replace();
+		};
+};
+
 
 
 }
