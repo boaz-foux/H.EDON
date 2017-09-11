@@ -25,7 +25,6 @@
 #ifndef ___PURE__HEDON__BIND___H___
 #define ___PURE__HEDON__BIND___H___
 #include <string>
-#define NODE_MODULE_VERSION 57
 
 namespace HEDON {
 
