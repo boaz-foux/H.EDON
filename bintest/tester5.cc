@@ -63,7 +63,9 @@ bool tester (const test1 t1,const test1 t2){
 	return t1.i == t2.i && t1.str == t2.str;
 }
 
+
 void Init( v8::Handle<v8::Object> exports) {
+	
 	HEDON::TAG(test1,"Tester1");
 	HEDON::SETTER(test1, setter);
 	HEDON::GETTER(test1, getter);

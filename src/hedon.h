@@ -28,12 +28,13 @@
 
 namespace HEDON {
 
+
 #define BIND(I) binder<decltype(I),I>::bind
 				
 #define GETTER(C,GET) link<C>::getter = GET
 #define SETTER(C,SET) link<C>::setter = SET
 #define VALIDATOR(C,VALIDATE) link<C>::validator = VALIDATE
-#define TAG(C,TAG) link<C>::tag = TAG
+#define TAG(C,TAG) tagger<C>::tag = TAG
 
 #define ISOLATE v8::Isolate::GetCurrent()
 #define V8ARGS v8::FunctionCallbackInfo<v8::Value>
@@ -109,7 +110,7 @@ typedef
 	caching
 */
 template<typename FNTYPE,FNTYPE * fn ,typename TYPE, int ...Is>
-	struct cache{ 
+	struct cache{
 		static TYPE cached;
 	};
 template<typename FNTYPE,FNTYPE * fn,typename TYPE , int...Is>
@@ -121,6 +122,126 @@ template<typename FNTYPE,FNTYPE * fn , int ...Is>
 		: cache<FNTYPE,fn ,v8::Persistent<v8::Function>, Is...> {};
 
 /*
+	tagging
+*/
+
+template <typename TYPE>
+	struct tagger{
+	 static std::string tag;
+	};
+template<typename TYPE>
+	std::string tagger<TYPE>::tag  = "unknown";
+
+template <>
+	struct tagger<void>{
+	 static const char tag [];
+	};
+const char tagger<void>::tag []= "void";
+template <>
+	struct tagger<std::string>{
+	 static const char tag [];
+	};
+const char tagger<std::string>::tag [] = "std::string";
+template <>
+	struct tagger<char *>{
+	 static const char tag [];
+	};
+const char tagger<char *>::tag [] = "char *";
+template <>
+	struct tagger<unsigned char *>{
+	 static const char tag [];
+	};
+const char tagger<unsigned char *>::tag [] = "unsigned char *";
+template <>
+	struct tagger<double>{
+	 static const char tag [];
+	};
+const char tagger<double>::tag [] = "double";
+template <>
+	struct tagger<int32_t>{
+	 static const char tag [];
+	};
+const char tagger<int32_t>::tag [] = "int32";
+template <>
+	struct tagger<uint32_t>{
+	 static const char tag [];
+	};
+const char tagger<uint32_t>::tag [] = "unsigned int32";
+template <>
+	struct tagger<int64_t>{
+	 static const char tag [];
+	};
+const char tagger<int64_t>::tag []= "int64";
+template <>
+	struct tagger<uint64_t>{
+	 static const char tag [];
+	};
+const char tagger<uint64_t>::tag []= "unsigned int64";
+template <>
+	struct tagger<bool>{
+	 static const char tag [];
+	};
+const char tagger<bool>::tag []= "boolean";
+
+
+template<typename TYPE >
+	struct tag_builder{
+		static std::string buildTag(){
+			return tagger<TYPE>::tag;
+		};
+	};
+
+template<typename TYPE >
+	struct tag_builder<TYPE *>{
+		static std::string buildTag(){
+			return std::string("pointer ") + tagger<TYPE>::tag;
+		};
+	};
+
+template<typename TYPE >
+	struct tag_builder<const TYPE>{
+		static std::string buildTag(){
+			return std::string("const ") + tagger<TYPE>::tag;
+		};
+	};
+
+template<typename R, typename ...ARGS >
+	struct tag_builder<R(ARGS...)>{
+		static const std::string tag;
+		static std::string buildTag(){
+				int n = counter<ARGS...>::n;
+				std::string rtn ;
+				rtn+= tagger<R>::tag;
+				rtn += "(";
+				std::string strs [] ={
+					std::string(tagger<ARGS>::tag)...
+				};
+				for(int i = 0 ; i <n ; i ++){
+					if(i >0){
+						rtn += ", ";
+					}
+					rtn += strs[i];
+				}
+				rtn += ")";
+				return rtn;
+			};
+	};
+template<typename R, typename ...ARGS >
+	struct tag_builder<R(*)(ARGS...)>
+		: tag_builder<R(ARGS...)>{};
+
+template <typename TYPE, TYPE t>
+	struct tag_use{
+	static bool _set;
+	static std::string tag;
+	};
+template<typename TYPE, TYPE t>
+	std::string tag_use<TYPE,t>::tag  = "";
+template<typename TYPE, TYPE t>
+	bool tag_use<TYPE,t>::_set  = false;
+
+
+/*
 	linking
 */
 
@@ -129,7 +250,6 @@ template<typename TYPE>
 	 	static TYPE (*getter)(const v8::Local<v8::Value> &,v8::Isolate *);
 	 	static v8::Local<v8::Value> (*setter)(const TYPE,v8::Isolate *);
 	 	static std::string (*validator)(const v8::Local<v8::Value> &,v8::Isolate *);
-	 	static char * tag;
 	 };
 
 template<typename TYPE> 
@@ -144,12 +264,9 @@ template<typename TYPE>
 	 std::string 
 	 	(*link<TYPE>::validator)
 	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
-template<typename TYPE> 
-	char * link<TYPE>::tag = nullptr;
 
 template<typename TYPE> 
 	struct linker{
-		static const char tag [];
 	 	static 
 	 		TYPE get(const v8::Local<v8::Value> & i ){
 	 			return link<TYPE>::getter(i,ISOLATE);
@@ -173,12 +290,10 @@ template<typename TYPE>
 	 			return str;
 	 		}
 	 };
-template<typename TYPE> 
-const char linker<TYPE >::tag [] = "unknown";
 
 template<typename TYPE> 
 	struct linker<TYPE *>{
-		static const char tag [];
+
 		static 
 			TYPE * get(const v8::Local<v8::Value> &i){
 				int64_t m = i->NumberValue();
@@ -201,12 +316,11 @@ template<typename TYPE>
 	 			return str;
 	 		} 
 	};
-template<typename TYPE> 
-const char linker<TYPE  *>::tag [] = "pointer";
+
 
 template<>
 	 struct linker<std::string>{
-	 	static const char tag [];
+
 	 	static std::string get(const v8::Local<v8::Value> &i){
 	 		v8::String::Utf8Value str(i);
 			return std::string(*str);
@@ -222,12 +336,11 @@ template<>
 	 		return str;
 	 	}
 	 };
-const char linker<std::string>::tag [] = "std::string";
 
 
 template<>
 	 struct linker<char *>{
-	 	static const char tag [];
+
 	 	static char * get(const v8::Local<v8::Value> &i){
 	 		v8::String::Utf8Value str(i);
 			return *str;
@@ -239,14 +352,13 @@ template<>
 	 		return linker<std::string>::validate(i);
 	 	}
 	 };
-const char linker<char *>::tag [] = "char *";
 
 template<>
 	 struct linker<const char *>:public linker<char *>{};
 
 template<>
 	 struct linker<unsigned char *>{
-	 	static const char tag [];
+
 	 	static unsigned char * get(const v8::Local<v8::Value> &i){
 			return (unsigned char*) linker<char *>::get(i);
 	 	}
@@ -261,14 +373,14 @@ template<>
 	 		return str;
 	 	}
 	 };
-const char linker<unsigned char *>::tag [] = "unsigned char *";
+
 template<>
 	 struct linker<const unsigned char *>:public linker<unsigned char *>{};
 
 
 template<>
 	 struct linker<double>{
-	 	static const char tag [];
+
 	 	static 
 	 		double get(const v8::Local<v8::Value> &i){
 		 		return i->NumberValue();
@@ -286,13 +398,12 @@ template<>
 	 			return str;
 	 		}
 	 };
-const char linker<double>::tag [] = "double";
 template<>
 	 struct linker<const double>:public linker<double>{};
 
 template<>
 	 struct linker<float>{
-	 	static const char tag [];
+
 	 	static 
 	 		float get(const v8::Local<v8::Value> &i){
 		 		return i->NumberValue();
@@ -306,14 +417,12 @@ template<>
 	 			return linker<double>::validate(i);
 	 		}
 	 };
-const char linker<float>::tag [] = "float";
 template<>
 	 struct linker<const float>:public linker<float>{};
 
 
 template<>
 	 struct linker<int32_t>{
-	 	static const char tag [];
 	 	static 
 	 		int32_t get(const v8::Local<v8::Value> &i){
 		 		return i->Int32Value();
@@ -331,14 +440,13 @@ template<>
 	 			return str;
 	 		}
 	 };
-const char linker<int32_t>::tag [] = "int32_t";
 template<>
 	 struct linker<const int32_t>:public linker<int32_t>{};
 
 
 template<>
 	 struct linker<uint32_t>{
-	 	static const char tag [];
+
 	 	static 
 	 		uint32_t get(const v8::Local<v8::Value> &i){
 		 		return i->Uint32Value();
@@ -356,14 +464,13 @@ template<>
 	 			return str;
 	 		}
 	 };
-const char linker<uint32_t>::tag [] = "uint32_t";
 template<>
 	 struct linker<const uint32_t>:public linker<uint32_t>{};
 
 
 template<>
 	 struct linker<int64_t>{
-	 	static const char tag [];
+
 	 	static 
 	 		int64_t get(const v8::Local<v8::Value> &i){
 		 		return i->IntegerValue();
@@ -376,15 +483,13 @@ template<>
 	 		std::string validate(const v8::Local<v8::Value> &i){
 	 			return linker<double>::validate(i);
 	 		}
-	 };	 
-const char linker<int64_t>::tag [] = "int64_t";
-
+	 };
 template<>
 	 struct linker<const int64_t>:public linker<int64_t>{};
 
 template<>
 	 struct linker<bool>{
-	 	static const char tag [];
+
 	 	static 
 	 		bool get(const v8::Local<v8::Value> &i){
 		 		return i->BooleanValue();
@@ -402,14 +507,13 @@ template<>
 	 			return str;
 	 		}
 	 };
-const char linker<bool>::tag [] = "boolean";
 template<>
 	 struct linker<const bool>:public linker<bool>{};
 
 
 template<>
 	 struct linker<void>{
-	 	static const char tag [];
+
 	 	static 
 	 		void get(const v8::Local<v8::Value> &){
 		 		return;
@@ -423,23 +527,21 @@ template<>
 	 			return std::string();
 	 		}
 	 };
-const char linker<void>::tag [] = "void";
-
 template<typename TYPE> 
 	struct linker<const TYPE>:linker<TYPE>{};
 
 
-template<typename FNTYPE , FNTYPE fn ,typename TYPE , int ...Is> 
+template<typename FNTYPE , FNTYPE fn ,typename TYPE , int ...Is>
 	struct linker_t : public linker<TYPE>{};
 
 template<typename FNTYPE , FNTYPE fn ,int ...Is >
 struct linker_t<FNTYPE,fn,std::string,Is...>{
-	static std::string 
-		get(const v8::Local<v8::Value> & i){ 
-			return cache<FNTYPE,fn,std::string,Is...>::cached 
+	static std::string
+		get(const v8::Local<v8::Value> & i){
+			return cache<FNTYPE,fn,std::string,Is...>::cached
 			 		= linker<std::string>::get(i);
 		};
-	static 
+	static
 	 	std::string validate(const v8::Local<v8::Value> &){
 	 			return std::string();
 	 		}
@@ -447,55 +549,55 @@ struct linker_t<FNTYPE,fn,std::string,Is...>{
 
 /*
 	replacing
-*/ 
-template<typename TYPE> 
+*/
+template<typename TYPE>
 	struct replace_suggestion{
 		typedef TYPE suggestion;
 	};
-template<> 
+template<>
 	struct replace_suggestion<void>{
 		typedef bool suggestion;
 	};
 
-template<> 
+template<>
 	struct replace_suggestion<char *>{
 		typedef const std::string suggestion;
 	};
-template<> 
+template<>
 	struct replace_suggestion<const char *>{
 		typedef const std::string suggestion;
 	};
 
 
-template<typename SRC, typename DEST> 
+template<typename SRC, typename DEST>
 	struct replacer;
 
-template<> 
+template<>
 	struct replacer<void,bool>{
 		static bool replace (bool i = false){ return false; }
 	};
 
-template<> 
+template<>
 	struct replacer<bool, void>{
 		static void replace (bool i = false){ return ; }
 	};
 
 
-template<typename SRC> 
+template<typename SRC>
 	struct replacer<SRC , const std::string >{
 		static  std::string replace (SRC  src){
-		 return std::string(src); 
+		 return std::string(src);
 		}
 	};
 
-template<typename DEST> 
+template<typename DEST>
 	struct replacer<const std::string ,DEST>{
 		static DEST replace (const std::string & src){
-		 return (DEST)src.data(); 
+		 return (DEST)src.data();
 		}
 	};
 
-template<typename SRC> 
+template<typename SRC>
 	struct replacer<SRC,SRC>{
 		static SRC replace (SRC src){ return src; }
 	};
@@ -506,18 +608,20 @@ template<typename FNTYPE,FNTYPE * fn ,typename SRC, typename DEST,int ...Is>
 template<typename FNTYPE,FNTYPE * fn , typename DEST,int ...Is>
 	struct replacer_cache<FNTYPE,fn ,const std::string,DEST, Is...>{
 		static DEST replace (const std::string & src){
+			cache<FNTYPE,fn ,std::string, Is...>::cached =  "" + src ;
 		 return replacer<const std::string ,DEST>::replace(
-		 	cache<FNTYPE,fn ,std::string, Is...>::cached = src
-		 	); 
+		 	cache<FNTYPE,fn ,std::string, Is...>::cached
+		 	);
 		}
 	};
 
 template<typename FNTYPE,FNTYPE * fn , typename SRC,int ...Is>
 	struct replacer_cache<FNTYPE,fn ,SRC,const std::string, Is...>{
 		static  std::string replace (SRC  src){
-		 return replacer<SRC ,const std::string >::replace(
-		 	cache<FNTYPE,fn ,SRC, Is...>::cached = src
-		 	); 
+		 return cache<FNTYPE,fn ,std::string, Is...>::cached 
+		 = replacer<SRC ,const std::string >::replace(
+		 	 src
+		 	);
 		}
 	};
 
@@ -539,7 +643,6 @@ struct linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
 	 		}
 	 	static 
 	 		R wrapper (ARGS...args){
-	 			//indexes<ARGS...>()
 	 		return	replacer_cache< FNTYPE,fn,suggest<R>,R ,-1>::replace(
 	 					call(replacer< ARGS , suggest<ARGS> > ::replace(args)...)
 	 				);
@@ -549,7 +652,7 @@ struct linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
 		static suggest<R> call(suggest<ARGS> ... args ){
 			int argc = counter<ARGS...>::n ;
 	 			v8::Handle<v8::Value> argv [] = { 
-					linker<suggest<ARGS>>::set(args)...  
+					linker<suggest<ARGS>>::set(args)...
 				};
 				v8::Local<v8::Function> 
 					callback = v8
@@ -563,8 +666,11 @@ struct linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
 
 		};
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
-	 			return std::string();
+	 		std::string validate(const v8::Local<v8::Value> &i){
+	 			if(!i->IsFunction()){
+	 				return "invalid value, should be a function.";
+	 			}
+	 			return "";
 	 		}
 };
 
@@ -583,7 +689,7 @@ std::string toString(int i){
 }
 
 
-template<typename TYPE, TYPE data> 
+template<typename TYPE, TYPE data>
 	 struct binder_t {
 	 	static 
 	 		void bind (const V8ARGS & arguments) {
@@ -646,21 +752,7 @@ template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 			};
 		static 
 			std::string tag (){
-				int n = counter<ARGS...>::n;
-				std::string rtn ;
-				rtn+= linker<R>::tag;
-				rtn += "(";
-				std::string strs [] ={
-					std::string(linker<ARGS>::tag)...
-				};
-				for(int i = 0 ; i <n ; i ++){
-					if(i >0){
-						rtn += ", ";
-					}
-					rtn += strs[i];
-				}
-				rtn += ")";
-				return rtn;
+				return tag_use<R(ARGS...),fn>::tag;
 			}
 		static 
 			bool validate (const V8ARGS & arguments){
@@ -682,7 +774,7 @@ template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 			if(str.empty()){
 				return true;
 			}
-			str =  binder_t<R(ARGS...),fn>::tag()+ "Error:"   + str;
+			str =  tag_use<R(ARGS...),fn>::tag + "Error:"   + str;
 			isolate =  arguments.GetIsolate();
 			isolate->ThrowException(
 				v8::String::NewFromUtf8(isolate,str.data())
@@ -698,16 +790,22 @@ struct binder<R(ARGS...),fn> {
 		typedef suggest<R>(fntype)(suggest<ARGS> ...);
 
 		static void bind (const V8ARGS & arguments) {
+			if(!tag_use<fntype,binder<R(ARGS...),fn>::wrap>::_set){
+				tag_use<fntype,binder<R(ARGS...),fn>::wrap>::_set = true;
+				tag_use<fntype,binder<R(ARGS...),fn>::wrap>::tag =
+				tag_builder<R(ARGS...)>::buildTag();
+			};
 			return binder_t<fntype,binder<R(ARGS...),fn>::wrap>::bind(arguments);
 		};
-		
+
 		static suggest<R> wrap(suggest<ARGS> ... args){
 			return binder<R(ARGS...),fn>::call(args... , indexes<ARGS...>() );
 		};
-		template<int ...Is> 
+
+		template<int ...Is>
 		static suggest<R> call(suggest<ARGS> ... args ,sequence<Is...>){
 			return replacer_cache< R(ARGS...),fn,R, suggest<R> ,-1>::replace(
-				fn( 
+				fn(
 					replacer_cache< R(ARGS...),fn, suggest<ARGS> ,ARGS,Is >::replace(args)...
 					)
 				 );
@@ -718,15 +816,14 @@ struct binder<void(ARGS...),fn> {
 		template< typename M>
 			using suggest =
 				 typename replace_suggestion<M>::suggestion;
-
-		typedef suggest<void>(fntype)(suggest<ARGS> ...);
+		typedef suggest<void>(fntype)( ARGS ...);
 
 		static void bind (const V8ARGS & arguments) {
 			return binder<fntype,binder<void(ARGS...),fn>::wrap>::bind(arguments);
 		};
-		
-		static suggest<void> wrap(suggest<ARGS> ... args){
-			fn( replacer< suggest<ARGS> ,ARGS  >::replace(args)...);
+
+		static suggest<void> wrap( ARGS ... args){
+			fn( args...);
 			return replacer< void,suggest<void> >::replace();
 		};
 };
