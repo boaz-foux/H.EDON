@@ -1,3 +1,4 @@
+
 describe('tester5 - setter & getter', ()=>{
 	let tester ,get;
 	const worngObjects = [

@@ -1,7 +1,7 @@
 /*
 *	MIT License
 *	
-*	Copyright (c) 2017 Boaz Foux
+*	Copyright (c) 2018 Boaz Foux
 *	
 *	Permission is hereby granted, free of charge, to any person obtaining a copy
 *	of this software and associated documentation files (the "Software"), to deal
@@ -28,77 +28,137 @@
 
 namespace HEDON {
 
-#define BIND(I) binder<decltype(I),I>::bind
-				
-#define GETTER(C,GET) link<C>::getter = GET
-#define SETTER(C,SET) link<C>::setter = SET
-#define VALIDATOR(C,VALIDATE) link<C>::validator = VALIDATE
-#define TAG(C,TAG) link<C>::tag = TAG
+/* should be refactored*/
+#define GETTER(C,GET) Link<C>::getter = GET
+#define SETTER(C,SET) Link<C>::setter = SET
+#define VALIDATOR(C,VALIDATE) Link<C>::validator = VALIDATE
+#define TAG(C,TAG) Link<C>::tag = TAG
+/* should be refactored*/
 
-#define ISOLATE v8::Isolate::GetCurrent()
-#define V8ARGS v8::FunctionCallbackInfo<v8::Value>
+#define ISOLATE \
+	v8::Isolate::GetCurrent()
 
-#define STRING(TXT) v8::String::New( ISOLATE ,TXT)
+#define JS_BIND_CALLBACK_TYPE \
+		v8::FunctionCallback  
+
+#define JS_VALUE \
+		v8::Local<v8::Value>
+
+#define JS_ARGS \
+	v8::FunctionCallbackInfo<v8::Value>
+
+#define JS_OBJECT \
+		v8::Local<v8::Object>
+
+#define JS_ARRAY(N_NUMBER_OF_ELEMENTS) \
+		v8::Array::New(ISOLATE, N_NUMBER_OF_ELEMENTS );
+
+#define JS_ARRAY_TYPE \
+		v8::Local<v8::Array>
+
+#define JS_NUMBER(NUMBER_VALUE) \
+		v8::Number::New(ISOLATE,NUMBER_VALUE)
+
+#define JS_BOOLEAN(BOOLEAN_VALUE) \
+	v8::Boolean::New(ISOLATE,BOOLEAN_VALUE)
+
+#define JS_STRING(TXT_VALUE) \
+	v8::String::NewFromUtf8(ISOLATE ,TXT_VALUE)
+
+#define JS_NULL \
+	v8::Null(ISOLATE)
+
+#define JS_FUNCTION_TEMPLATE \
+			v8::Local<v8::FunctionTemplate> 
+
+#define JS_NEW_FUNCTION_TEMPLATE(CALLBACK) \
+			v8::FunctionTemplate::New(ISOLATE,CALLBACK)
+
+#define JS_THROW(ERROR_TXT_VALUE) \
+    		ISOLATE->ThrowException( \
+          		v8::Exception::Error( \
+               		JS_STRING( ERROR_TXT_VALUE ) \
+            	) \
+         	)
+
+#define BIND(I) \
+	Binder<decltype(I),I>::bind
+
+#define EXPORT(EXP,I) \
+	HEDON::Binder<decltype(I),I>::exporter(EXP,#I)
+
 /*
-	counter
+	Counter
 */ 
-template< typename ... ARGS> 
-	struct counter {};
+template< typename ...TYPES> 
+	class Counter {};
+
 template<>
-	struct counter<> {
+	class Counter<> {
+	public:
 	    static const int n = 0;
 	};
-template<typename T, typename... VARGS>
-	struct counter<T, VARGS...> {
-	    static const int n = 1 + counter<VARGS...>::n;
+
+template<typename T, typename... TYPES>
+	class Counter<T, TYPES...> {
+	public:
+	    static const int n = 1 + Counter<TYPES...>::n;
 	};
 /*
-	index sequence
+	index Sequence
 */
-template <int...> struct sequence {};
+template <int...> class Sequence {};
 
-template <class S1, class S2> struct concat_sequence;
-template <class S1, class S2> using  concat_sequence_t = typename concat_sequence<S1, S2>::i;
+template <class S1, class S2> 
+		class ConcatSequence;
+template <class S1, class S2> 
+		using ConcatSequenceTemp = typename ConcatSequence<S1, S2>::i;
 
 template <int... I1, int... I2>
-	struct concat_sequence<sequence<I1...>, sequence<I2...> > {
-	  using i = sequence<I1..., (sizeof...(I1)+I2)...>;
+	class ConcatSequence<	Sequence<I1...>,	Sequence<I2...>		> {
+	public:
+	  using i = Sequence<I1..., (sizeof...(I1)+I2)...>;
 	};
 
 /*
-	make index sequence
+	make index Sequence
 */
 template <int N> 
-	struct make_sequence;
+	class MakeSequence;
+	
 template <int N> 
-	using  make_sequence_t = typename make_sequence<N>::i;
+	using  MakeSequenceTemp = typename MakeSequence<N>::i;
 
 template <int N>
-	struct make_sequence {
-	  using i = concat_sequence_t<make_sequence_t<N/2>, make_sequence_t<N - N/2>>;
+	class MakeSequence {
+	public:
+	  using i = ConcatSequenceTemp<MakeSequenceTemp<N/2>, MakeSequenceTemp<N - N/2>>;
 	};
 
 template <> 
-	struct make_sequence<1> { 
-		using i = sequence<0>; 
+	class MakeSequence<1> { 
+	public:
+		using i = Sequence<0>; 
 	};
 template <> 
-	struct make_sequence<0> { 
-		using i = sequence<>;
-		 };
+	class MakeSequence<0> {
+	public: 
+		using i = Sequence<>;
+	};
 
 /*
-	sizeof index sequence
+	sizeof index Sequence
 */
 template <int... Is>
-	constexpr size_t size(sequence<Is...>) {
+	constexpr size_t size(Sequence<Is...>) {
 	  return sizeof...(Is);
 	}
 /*
-	indexes 
+	Indexing 
 */
 template <typename ... ARGS > 
-	using  indexes = typename make_sequence< counter<ARGS...>::n >::i;
+	using  Indexes = typename MakeSequence< Counter<ARGS...>::n >::i;
+
 
 
 typedef 
@@ -109,23 +169,25 @@ typedef
 	caching
 */
 template<typename FNTYPE,FNTYPE * fn ,typename TYPE, int ...Is>
-	struct cache{ 
+	class Cache{
+		public: 
 		static TYPE cached;
 	};
 template<typename FNTYPE,FNTYPE * fn,typename TYPE , int...Is>
-	 TYPE  cache<FNTYPE,fn,TYPE,Is...>::cached;
+	 TYPE  Cache<FNTYPE,fn,TYPE,Is...>::cached;
 
 
 template<typename FNTYPE,FNTYPE * fn , int ...Is>
-	struct callback_cache
-		: cache<FNTYPE,fn ,v8::Persistent<v8::Function>, Is...> {};
+	class CallbackCache
+		: public Cache<FNTYPE,fn ,v8::Persistent<v8::Function>, Is...> {};
 
 /*
 	linking
 */
 
 template<typename TYPE> 
-	struct link{
+	class Link {
+	public:
 	 	static TYPE (*getter)(const v8::Local<v8::Value> &,v8::Isolate *);
 	 	static v8::Local<v8::Value> (*setter)(const TYPE,v8::Isolate *);
 	 	static std::string (*validator)(const v8::Local<v8::Value> &,v8::Isolate *);
@@ -134,50 +196,52 @@ template<typename TYPE>
 
 template<typename TYPE> 
 	 TYPE 
-	 	(*link<TYPE>::getter)
+	 	(*Link<TYPE>::getter)
 	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
 template<typename TYPE> 
 	 v8::Local<v8::Value>
-	 	(*link<TYPE>::setter)
+	 	(*Link<TYPE>::setter)
 	 		(TYPE,v8::Isolate *) = nullptr;
 template<typename TYPE> 
 	 std::string 
-	 	(*link<TYPE>::validator)
+	 	(*Link<TYPE>::validator)
 	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
 template<typename TYPE> 
-	char * link<TYPE>::tag = nullptr;
+	char * Link<TYPE>::tag = nullptr;
 
 template<typename TYPE> 
-	struct linker{
+	class Linker{
+	public:
 		static const char tag [];
 	 	static 
 	 		TYPE get(const v8::Local<v8::Value> & i ){
-	 			return link<TYPE>::getter(i,ISOLATE);
+	 			return Link<TYPE>::getter(i,ISOLATE);
 	 		}
 	 	static 
 	 		v8::Local<v8::Value> set(const TYPE i){
-	 			if(link<TYPE>::setter != nullptr){
-	 				return link<TYPE>::setter(i,ISOLATE);
+	 			if(Link<TYPE>::setter != nullptr){
+	 				return Link<TYPE>::setter(i,ISOLATE);
 	 			}
 	 			return v8::Undefined(ISOLATE);
 	 		}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
 	 			std::string str;
-	 			if(link<TYPE>::validator != nullptr){
-	 				str = link<TYPE>::validator(i,ISOLATE);
+	 			if(Link<TYPE>::validator != nullptr){
+	 				str = Link<TYPE>::validator(i,ISOLATE);
 	 			}
-	 			if(link<TYPE>::getter == nullptr){
+	 			if(Link<TYPE>::getter == nullptr){
 	 				str += "getter function is missing";
 	 			}
 	 			return str;
 	 		}
 	 };
 template<typename TYPE> 
-const char linker<TYPE >::tag [] = "unknown";
+const char Linker<TYPE >::tag [] = "unknown";
 
 template<typename TYPE> 
-	struct linker<TYPE *>{
+	class Linker<TYPE *>{
+	public:
 		static const char tag [];
 		static 
 			TYPE * get(const v8::Local<v8::Value> &i){
@@ -202,10 +266,11 @@ template<typename TYPE>
 	 		} 
 	};
 template<typename TYPE> 
-const char linker<TYPE  *>::tag [] = "pointer";
+const char Linker<TYPE  *>::tag [] = "pointer";
 
 template<>
-	 struct linker<std::string>{
+	 class Linker<std::string>{
+	 public:
 	 	static const char tag [];
 	 	static std::string get(const v8::Local<v8::Value> &i){
 	 		v8::String::Utf8Value str(i);
@@ -222,11 +287,12 @@ template<>
 	 		return str;
 	 	}
 	 };
-const char linker<std::string>::tag [] = "std::string";
+const char Linker<std::string>::tag [] = "std::string";
 
 
 template<>
-	 struct linker<char *>{
+	 class Linker<char *>{
+	 public:
 	 	static const char tag [];
 	 	static char * get(const v8::Local<v8::Value> &i){
 	 		v8::String::Utf8Value str(i);
@@ -236,22 +302,23 @@ template<>
 	 		return v8::String::NewFromUtf8(ISOLATE, data);
 	 	}
 	 	static std::string validate(const v8::Local<v8::Value> &i){
-	 		return linker<std::string>::validate(i);
+	 		return Linker<std::string>::validate(i);
 	 	}
 	 };
-const char linker<char *>::tag [] = "char *";
+const char Linker<char *>::tag [] = "char *";
 
 template<>
-	 struct linker<const char *>:public linker<char *>{};
+	 class Linker<const char *>:public Linker<char *>{};
 
 template<>
-	 struct linker<unsigned char *>{
+	 class Linker<unsigned char *>{
+	 public:
 	 	static const char tag [];
 	 	static unsigned char * get(const v8::Local<v8::Value> &i){
-			return (unsigned char*) linker<char *>::get(i);
+			return (unsigned char*) Linker<char *>::get(i);
 	 	}
 	 	static v8::Local<v8::Value> set(const unsigned char * data){
-	 		return linker<char *>::set((char *)data);
+	 		return Linker<char *>::set((char *)data);
 	 	}
 	 	static std::string validate(const v8::Local<v8::Value> &i){
 	 		std::string str;
@@ -261,13 +328,14 @@ template<>
 	 		return str;
 	 	}
 	 };
-const char linker<unsigned char *>::tag [] = "unsigned char *";
+const char Linker<unsigned char *>::tag [] = "unsigned char *";
 template<>
-	 struct linker<const unsigned char *>:public linker<unsigned char *>{};
+	 class Linker<const unsigned char *>:public Linker<unsigned char *>{};
 
 
 template<>
-	 struct linker<double>{
+	 class Linker<double>{
+	 public:
 	 	static const char tag [];
 	 	static 
 	 		double get(const v8::Local<v8::Value> &i){
@@ -286,12 +354,13 @@ template<>
 	 			return str;
 	 		}
 	 };
-const char linker<double>::tag [] = "double";
+const char Linker<double>::tag [] = "double";
 template<>
-	 struct linker<const double>:public linker<double>{};
+	 class Linker<const double>:public Linker<double>{};
 
 template<>
-	 struct linker<float>{
+	 class Linker<float>{
+	 public:
 	 	static const char tag [];
 	 	static 
 	 		float get(const v8::Local<v8::Value> &i){
@@ -303,16 +372,17 @@ template<>
 		 	}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
-	 			return linker<double>::validate(i);
+	 			return Linker<double>::validate(i);
 	 		}
 	 };
-const char linker<float>::tag [] = "float";
+const char Linker<float>::tag [] = "float";
 template<>
-	 struct linker<const float>:public linker<float>{};
+	 class Linker<const float>:public Linker<float>{};
 
 
 template<>
-	 struct linker<int32_t>{
+	 class Linker<int32_t>{
+	 public:
 	 	static const char tag [];
 	 	static 
 	 		int32_t get(const v8::Local<v8::Value> &i){
@@ -331,13 +401,14 @@ template<>
 	 			return str;
 	 		}
 	 };
-const char linker<int32_t>::tag [] = "int32_t";
+const char Linker<int32_t>::tag [] = "int32_t";
 template<>
-	 struct linker<const int32_t>:public linker<int32_t>{};
+	 class Linker<const int32_t>:public Linker<int32_t>{};
 
 
 template<>
-	 struct linker<uint32_t>{
+	 class Linker<uint32_t>{
+	 public:
 	 	static const char tag [];
 	 	static 
 	 		uint32_t get(const v8::Local<v8::Value> &i){
@@ -356,13 +427,14 @@ template<>
 	 			return str;
 	 		}
 	 };
-const char linker<uint32_t>::tag [] = "uint32_t";
+const char Linker<uint32_t>::tag [] = "uint32_t";
 template<>
-	 struct linker<const uint32_t>:public linker<uint32_t>{};
+	 class Linker<const uint32_t>:public Linker<uint32_t>{};
 
 
 template<>
-	 struct linker<int64_t>{
+	 class Linker<int64_t>{
+	 public:
 	 	static const char tag [];
 	 	static 
 	 		int64_t get(const v8::Local<v8::Value> &i){
@@ -374,16 +446,17 @@ template<>
 		 	}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
-	 			return linker<double>::validate(i);
+	 			return Linker<double>::validate(i);
 	 		}
 	 };	 
-const char linker<int64_t>::tag [] = "int64_t";
+const char Linker<int64_t>::tag [] = "int64_t";
 
 template<>
-	 struct linker<const int64_t>:public linker<int64_t>{};
+	 class Linker<const int64_t>:public Linker<int64_t>{};
 
 template<>
-	 struct linker<bool>{
+	 class Linker<bool>{
+	 public:
 	 	static const char tag [];
 	 	static 
 	 		bool get(const v8::Local<v8::Value> &i){
@@ -402,13 +475,14 @@ template<>
 	 			return str;
 	 		}
 	 };
-const char linker<bool>::tag [] = "boolean";
+const char Linker<bool>::tag [] = "boolean";
 template<>
-	 struct linker<const bool>:public linker<bool>{};
+	 class Linker<const bool>:public Linker<bool>{};
 
 
 template<>
-	 struct linker<void>{
+	 class Linker<void>{
+	 public:
 	 	static const char tag [];
 	 	static 
 	 		void get(const v8::Local<v8::Value> &){
@@ -423,21 +497,22 @@ template<>
 	 			return std::string();
 	 		}
 	 };
-const char linker<void>::tag [] = "void";
+const char Linker<void>::tag [] = "void";
 
 template<typename TYPE> 
-	struct linker<const TYPE>:linker<TYPE>{};
+	class Linker<const TYPE>: public Linker<TYPE>{};
 
 
 template<typename FNTYPE , FNTYPE fn ,typename TYPE , int ...Is> 
-	struct linker_t : public linker<TYPE>{};
+	class Linker_t : public Linker<TYPE>{};
 
 template<typename FNTYPE , FNTYPE fn ,int ...Is >
-struct linker_t<FNTYPE,fn,std::string,Is...>{
+class Linker_t<FNTYPE,fn,std::string,Is...>{
+public:
 	static std::string 
 		get(const v8::Local<v8::Value> & i){ 
-			return cache<FNTYPE,fn,std::string,Is...>::cached 
-			 		= linker<std::string>::get(i);
+			return Cache<FNTYPE,fn,std::string,Is...>::cached 
+			 		= Linker<std::string>::get(i);
 		};
 	static 
 	 	std::string validate(const v8::Local<v8::Value> &){
@@ -449,114 +524,126 @@ struct linker_t<FNTYPE,fn,std::string,Is...>{
 	replacing
 */ 
 template<typename TYPE> 
-	struct replace_suggestion{
+	class ReplaceSuggestion{
+	public:
 		typedef TYPE suggestion;
 	};
 template<> 
-	struct replace_suggestion<void>{
+	class ReplaceSuggestion<void>{
+	public:
 		typedef bool suggestion;
 	};
 
 template<> 
-	struct replace_suggestion<char *>{
+	class ReplaceSuggestion<char *>{
+	public:
 		typedef const std::string suggestion;
 	};
 template<> 
-	struct replace_suggestion<const char *>{
+	class ReplaceSuggestion<const char *>{
+	public:
 		typedef const std::string suggestion;
 	};
 
 
 template<typename SRC, typename DEST> 
-	struct replacer;
+	class Replacer;
 
 template<> 
-	struct replacer<void,bool>{
+	class Replacer<void,bool>{
+	public:
 		static bool replace (bool i = false){ return false; }
 	};
 
 template<> 
-	struct replacer<bool, void>{
+	class Replacer<bool, void>{
+	public:
 		static void replace (bool i = false){ return ; }
 	};
 
 
 template<typename SRC> 
-	struct replacer<SRC , const std::string >{
+	class Replacer<SRC , const std::string >{
+	public:
 		static  std::string replace (SRC  src){
 		 return std::string(src); 
 		}
 	};
 
 template<typename DEST> 
-	struct replacer<const std::string ,DEST>{
+	class Replacer<const std::string ,DEST>{
+	public:
 		static DEST replace (const std::string & src){
 		 return (DEST)src.data(); 
 		}
 	};
 
 template<typename SRC> 
-	struct replacer<SRC,SRC>{
+	class Replacer<SRC,SRC>{
+			public:
 		static SRC replace (SRC src){ return src; }
 	};
 
 template<typename FNTYPE,FNTYPE * fn ,typename SRC, typename DEST,int ...Is>
-	struct replacer_cache :replacer<SRC,DEST> {};
+	class ReplacerCache :public Replacer<SRC,DEST> {};
 
 template<typename FNTYPE,FNTYPE * fn , typename DEST,int ...Is>
-	struct replacer_cache<FNTYPE,fn ,const std::string,DEST, Is...>{
+	class ReplacerCache<FNTYPE,fn ,const std::string,DEST, Is...>{
+			public:
 		static DEST replace (const std::string & src){
-		 return replacer<const std::string ,DEST>::replace(
-		 	cache<FNTYPE,fn ,std::string, Is...>::cached = src
+		 return Replacer<const std::string ,DEST>::replace(
+		 	Cache<FNTYPE,fn ,std::string, Is...>::cached = src
 		 	); 
 		}
 	};
 
 template<typename FNTYPE,FNTYPE * fn , typename SRC,int ...Is>
-	struct replacer_cache<FNTYPE,fn ,SRC,const std::string, Is...>{
+	class ReplacerCache<FNTYPE,fn ,SRC,const std::string, Is...>{
+	public:
 		static  std::string replace (SRC  src){
-		 return replacer<SRC ,const std::string >::replace(
-		 	cache<FNTYPE,fn ,SRC, Is...>::cached = src
+		 return Replacer<SRC ,const std::string >::replace(
+		 	Cache<FNTYPE,fn ,SRC, Is...>::cached = src
 		 	); 
 		}
 	};
 
 template< typename M>
-	using suggest =
-		 typename replace_suggestion<M>::suggestion;
+	using Suggest =
+		 typename ReplaceSuggestion<M>::suggestion;
 
 /*
 	linker
 */
 template<typename FNTYPE , FNTYPE fn ,typename R, typename ...ARGS ,int ...Is >
-struct linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
+class Linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
+		public:
 	typedef R(&rtntype)(ARGS...);
 		 static 
 	 		rtntype get(const v8::Local<v8::Value> & i){
 	 			v8::Local<v8::Function> callback = v8::Local<v8::Function>::Cast(i);
-	 			callback_cache<FNTYPE,fn,Is...>::cached.Reset(ISOLATE,callback);
-	 			return linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>::wrapper;
+	 			CallbackCache<FNTYPE,fn,Is...>::cached.Reset(ISOLATE,callback);
+	 			return Linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>::wrapper;
 	 		}
 	 	static 
 	 		R wrapper (ARGS...args){
-	 			//indexes<ARGS...>()
-	 		return	replacer_cache< FNTYPE,fn,suggest<R>,R ,-1>::replace(
-	 					call(replacer< ARGS , suggest<ARGS> > ::replace(args)...)
+	 			//Indexes<ARGS...>()
+	 		return	ReplacerCache< FNTYPE,fn,Suggest<R>,R ,-1>::replace(
+	 					call(Replacer< ARGS , Suggest<ARGS> > ::replace(args)...)
 	 				);
 	 		}
 
 
-		static suggest<R> call(suggest<ARGS> ... args ){
-			int argc = counter<ARGS...>::n ;
+		static Suggest<R> call(Suggest<ARGS> ... args ){
+			int argc = Counter<ARGS...>::n ;
 	 			v8::Handle<v8::Value> argv [] = { 
-					linker<suggest<ARGS>>::set(args)...  
+					Linker<Suggest<ARGS>>::set(args)...  
 				};
 				v8::Local<v8::Function> 
 					callback = v8
 						::Local<v8::Function>
 						::New(ISOLATE,
-							callback_cache<FNTYPE,fn,Is...>::cached);
-				return linker< suggest<R> >::get(callback->Call(
+							CallbackCache<FNTYPE,fn,Is...>::cached);
+				return Linker< Suggest<R> >::get(callback->Call(
 											v8::Null(ISOLATE),
 											argc,
 											argv));
@@ -584,26 +671,28 @@ std::string toString(int i){
 
 
 template<typename TYPE, TYPE data> 
-	 struct binder_t {
+	 class Binder_t {
+	 public:
 	 	static 
-	 		void bind (const V8ARGS & arguments) {
+	 		void bind (const JS_ARGS & arguments) {
 			arguments
 				.GetReturnValue()
-				.Set(linker<TYPE>::set(data));
+				.Set(Linker<TYPE>::set(data));
 			return;
 	 		};
 	 };
 
 template<typename TYPE, int N, TYPE (&array)[N]> 
-	 struct binder_t<TYPE[N],array>{
+	 class Binder_t<TYPE[N],array>{
+	 public:
 	 	static 
-	 		void bind (const V8ARGS & arguments) {
+	 		void bind (const JS_ARGS & arguments) {
 			  v8::Handle<v8::Array> v8Array = v8::Array::New(arguments.GetIsolate(),N);
 			  if (v8Array.IsEmpty()){
 			  	return;
 			  }
 			  for(int i = 0  ;  i < N ; i++){
-			  	v8Array->Set(i, linker<TYPE>::set(array[i]));
+			  	v8Array->Set(i, Linker<TYPE>::set(array[i]));
 			  }
 			  arguments
 				.GetReturnValue()
@@ -611,33 +700,34 @@ template<typename TYPE, int N, TYPE (&array)[N]>
 	 		};
 	};
 template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
-	struct binder_t<R(ARGS...),fn>{
+	class Binder_t<R(ARGS...),fn>{
+		 public:
 		typedef R(fntype)(ARGS...);
 		static 
-			void bind (const V8ARGS & arguments) {
-				if(!binder_t<fntype,fn>::validate(arguments)){
+			void bind (const JS_ARGS & arguments) {
+				if(!Binder_t<fntype,fn>::validate(arguments)){
 					return;
 				}				
 				R value = 
-				 binder_t<fntype,fn>
-				 ::invoke(arguments,indexes<ARGS...>());
+				 Binder_t<fntype,fn>
+				 ::invoke(arguments,Indexes<ARGS...>());
 				arguments
 				.GetReturnValue()
-				.Set(linker<R>::set(value));
+				.Set(Linker<R>::set(value));
 			};
 		template<int ...Is> static 
-			R invoke (const V8ARGS & arguments ,sequence<Is...>){
-				return fn( linker_t<fntype,fn,ARGS,Is>::get(arguments[Is])...);
+			R invoke (const JS_ARGS & arguments ,Sequence<Is...>){
+				return fn( Linker_t<fntype,fn,ARGS,Is>::get(arguments[Is])...);
 			};
 
 		template<int ...Is> static 
-			std::string validateArgs (const V8ARGS & arguments ,sequence<Is...>){
+			std::string validateArgs (const JS_ARGS & arguments ,Sequence<Is...>){
 				std::string res;
 				std::string
 				 strs [] = {
-				 	linker_t<fntype,fn,ARGS,Is>::validate(arguments[Is])...
+				 	Linker_t<fntype,fn,ARGS,Is>::validate(arguments[Is])...
 				 };
-				 int n = counter<ARGS...>::n;
+				 int n = Counter<ARGS...>::n;
 				 for(int i = 0 ; i < n ; i++ )
 				 if(!strs[i].empty()){
 				 	res = "(#" +  toString(i)+ ")" + strs[i];
@@ -646,12 +736,12 @@ template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 			};
 		static 
 			std::string tag (){
-				int n = counter<ARGS...>::n;
+				int n = Counter<ARGS...>::n;
 				std::string rtn ;
-				rtn+= linker<R>::tag;
+				rtn+= Linker<R>::tag;
 				rtn += "(";
 				std::string strs [] ={
-					std::string(linker<ARGS>::tag)...
+					std::string(Linker<ARGS>::tag)...
 				};
 				for(int i = 0 ; i <n ; i ++){
 					if(i >0){
@@ -663,9 +753,9 @@ template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 				return rtn;
 			}
 		static 
-			bool validate (const V8ARGS & arguments){
+			bool validate (const JS_ARGS & arguments){
 			int length = arguments.Length(),
-			 	n = counter<ARGS...>::n ;
+			 	n = Counter<ARGS...>::n ;
 			std::string str;
 			v8::Isolate * isolate;
 
@@ -675,14 +765,14 @@ template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 			else if(n  < length ){
 				str = "to many arguments, overflow by" + toString(length-n) +".";
 			} else {
-				str = binder_t<fntype,fn>
-				 ::validateArgs(arguments,indexes<ARGS...>());
+				str = Binder_t<fntype,fn>
+				 ::validateArgs(arguments,Indexes<ARGS...>());
 			}
 
 			if(str.empty()){
 				return true;
 			}
-			str =  binder_t<R(ARGS...),fn>::tag()+ "Error:"   + str;
+			str =  Binder_t<R(ARGS...),fn>::tag()+ "Error:"   + str;
 			isolate =  arguments.GetIsolate();
 			isolate->ThrowException(
 				v8::String::NewFromUtf8(isolate,str.data())
@@ -691,43 +781,45 @@ template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 			};
 	};
 
-template<typename TYPE, TYPE data> struct binder :public binder_t<TYPE,data> {};
+template<typename TYPE, TYPE data> class Binder:public Binder_t<TYPE,data> {};
 
 template< typename R ,typename ...ARGS, R(&&fn)(ARGS...)>
-struct binder<R(ARGS...),fn> {
-		typedef suggest<R>(fntype)(suggest<ARGS> ...);
+class Binder <R(ARGS...),fn> {
+		public:
+		typedef Suggest<R>(fntype)(Suggest<ARGS> ...);
 
-		static void bind (const V8ARGS & arguments) {
-			return binder_t<fntype,binder<R(ARGS...),fn>::wrap>::bind(arguments);
+		static void bind (const JS_ARGS & arguments) {
+			return Binder_t<fntype,Binder<R(ARGS...),fn>::wrap>::bind(arguments);
 		};
 		
-		static suggest<R> wrap(suggest<ARGS> ... args){
-			return binder<R(ARGS...),fn>::call(args... , indexes<ARGS...>() );
+		static Suggest<R> wrap(Suggest<ARGS> ... args){
+			return Binder<R(ARGS...),fn>::call(args... , Indexes<ARGS...>() );
 		};
 		template<int ...Is> 
-		static suggest<R> call(suggest<ARGS> ... args ,sequence<Is...>){
-			return replacer_cache< R(ARGS...),fn,R, suggest<R> ,-1>::replace(
+		static Suggest<R> call(Suggest<ARGS> ... args ,Sequence<Is...>){
+			return ReplacerCache< R(ARGS...),fn,R, Suggest<R> ,-1>::replace(
 				fn( 
-					replacer_cache< R(ARGS...),fn, suggest<ARGS> ,ARGS,Is >::replace(args)...
+					ReplacerCache< R(ARGS...),fn, Suggest<ARGS> ,ARGS,Is >::replace(args)...
 					)
 				 );
 		};
 };
 template< typename ...ARGS, void(&&fn)(ARGS...)>
-struct binder<void(ARGS...),fn> {
+class Binder<void(ARGS...),fn> {
+		public:
 		template< typename M>
 			using suggest =
-				 typename replace_suggestion<M>::suggestion;
+				 typename ReplaceSuggestion<M>::suggestion;
 
-		typedef suggest<void>(fntype)(suggest<ARGS> ...);
+		typedef Suggest<void>(fntype)(Suggest<ARGS> ...);
 
-		static void bind (const V8ARGS & arguments) {
-			return binder<fntype,binder<void(ARGS...),fn>::wrap>::bind(arguments);
+		static void bind (const JS_ARGS & arguments) {
+			return Binder<fntype,Binder<void(ARGS...),fn>::wrap>::bind(arguments);
 		};
 		
-		static suggest<void> wrap(suggest<ARGS> ... args){
-			fn( replacer< suggest<ARGS> ,ARGS  >::replace(args)...);
-			return replacer< void,suggest<void> >::replace();
+		static Suggest<void> wrap(Suggest<ARGS> ... args){
+			fn( Replacer< Suggest<ARGS> ,ARGS  >::replace(args)...);
+			return Replacer< void,Suggest<void> >::replace();
 		};
 };
 
