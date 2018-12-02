@@ -26,7 +26,7 @@ test1 getter (const v8::Local<v8::Value> &i,v8::Isolate *isolate){
 	v8::Local<v8::Object> o =  i->ToObject(isolate);
 	test1 t;
 	t.i = o->Get(v8::String::NewFromUtf8(isolate,"i"))-> Int32Value();
-	v8::String::Utf8Value str(o->Get(v8::String::NewFromUtf8(isolate,"str")));
+	v8::String::Utf8Value str(o->Get(JS_STRING("str") ));
 	t.str = *str;
 	return t;
 }

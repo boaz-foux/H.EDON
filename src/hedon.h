@@ -68,6 +68,9 @@ namespace HEDON {
 #define JS_NULL \
 	v8::Null(ISOLATE)
 
+#define JS_UNDEFINED \
+	v8::Undefined(ISOLATE)
+
 #define JS_FUNCTION_TEMPLATE \
 			v8::Local<v8::FunctionTemplate> 
 
@@ -198,14 +201,17 @@ template<typename TYPE>
 	 TYPE 
 	 	(*Link<TYPE>::getter)
 	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
+
 template<typename TYPE> 
 	 v8::Local<v8::Value>
 	 	(*Link<TYPE>::setter)
 	 		(TYPE,v8::Isolate *) = nullptr;
+
 template<typename TYPE> 
 	 std::string 
 	 	(*Link<TYPE>::validator)
 	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
+
 template<typename TYPE> 
 	char * Link<TYPE>::tag = nullptr;
 
@@ -222,7 +228,7 @@ template<typename TYPE>
 	 			if(Link<TYPE>::setter != nullptr){
 	 				return Link<TYPE>::setter(i,ISOLATE);
 	 			}
-	 			return v8::Undefined(ISOLATE);
+	 			return JS_UNDEFINED;
 	 		}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
@@ -254,7 +260,7 @@ template<typename TYPE>
 			static 
 				v8::Local<v8::Value> set(const TYPE * data){
 					int64_t i = (int64_t)data;
-					return v8::Number::New(ISOLATE,i);
+					return JS_NUMBER(i);
 				}
 	 		static
 	 			std::string validate(const v8::Local<v8::Value> &i){
@@ -273,11 +279,11 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static std::string get(const v8::Local<v8::Value> &i){
-	 		v8::String::Utf8Value str(i);
+	 		v8::String::Utf8Value str(ISOLATE, i);
 			return std::string(*str);
 	 	}
 	 	static v8::Local<v8::Value> set(const std::string & str){
-	 		return v8::String::NewFromUtf8(ISOLATE, str.data());
+	 		return JS_STRING(str.data());
 	 	}
 	 	static std::string validate(const v8::Local<v8::Value> &i){
 	 		std::string str;
@@ -295,20 +301,17 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static char * get(const v8::Local<v8::Value> &i){
-	 		v8::String::Utf8Value str(i);
+	 		v8::String::Utf8Value str(ISOLATE,i);
 			return *str;
 	 	}
 	 	static v8::Local<v8::Value> set(const char * data){
-	 		return v8::String::NewFromUtf8(ISOLATE, data);
+	 		return JS_STRING(data);
 	 	}
 	 	static std::string validate(const v8::Local<v8::Value> &i){
 	 		return Linker<std::string>::validate(i);
 	 	}
 	 };
 const char Linker<char *>::tag [] = "char *";
-
-template<>
-	 class Linker<const char *>:public Linker<char *>{};
 
 template<>
 	 class Linker<unsigned char *>{
@@ -329,8 +332,6 @@ template<>
 	 	}
 	 };
 const char Linker<unsigned char *>::tag [] = "unsigned char *";
-template<>
-	 class Linker<const unsigned char *>:public Linker<unsigned char *>{};
 
 
 template<>
@@ -343,7 +344,7 @@ template<>
 		 	}
 	 	static 
 		 	v8::Local<v8::Value> set(const double i){
-		 		return v8::Number::New(ISOLATE,i);
+		 		return JS_NUMBER(i);
 		 	}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
@@ -355,8 +356,7 @@ template<>
 	 		}
 	 };
 const char Linker<double>::tag [] = "double";
-template<>
-	 class Linker<const double>:public Linker<double>{};
+
 
 template<>
 	 class Linker<float>{
@@ -368,7 +368,7 @@ template<>
 		 	}
 	 	static 
 		 	v8::Local<v8::Value> set(const float i){
-		 		return v8::Number::New(ISOLATE,i);
+		 		return JS_NUMBER(i);
 		 	}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
@@ -390,7 +390,7 @@ template<>
 		 	}
 	 	static 
 		 	v8::Local<v8::Value> set(const int32_t i){
-		 		return v8::Number::New(ISOLATE,i);
+		 		return JS_NUMBER(i);
 		 	}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
@@ -402,8 +402,6 @@ template<>
 	 		}
 	 };
 const char Linker<int32_t>::tag [] = "int32_t";
-template<>
-	 class Linker<const int32_t>:public Linker<int32_t>{};
 
 
 template<>
@@ -416,7 +414,7 @@ template<>
 		 	}
 	 	static 
 		 	v8::Local<v8::Value> set(const uint32_t i){
-		 		return v8::Number::New(ISOLATE,i);
+		 		return JS_NUMBER(i);
 		 	}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){ 
@@ -428,8 +426,6 @@ template<>
 	 		}
 	 };
 const char Linker<uint32_t>::tag [] = "uint32_t";
-template<>
-	 class Linker<const uint32_t>:public Linker<uint32_t>{};
 
 
 template<>
@@ -442,7 +438,7 @@ template<>
 		 	}
 	 	static 
 		 	v8::Local<v8::Value> set(const int64_t i){
-		 		return v8::Number::New(ISOLATE,i);
+		 		return JS_NUMBER(i);
 		 	}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
@@ -451,8 +447,7 @@ template<>
 	 };	 
 const char Linker<int64_t>::tag [] = "int64_t";
 
-template<>
-	 class Linker<const int64_t>:public Linker<int64_t>{};
+
 
 template<>
 	 class Linker<bool>{
@@ -464,7 +459,7 @@ template<>
 		 	}
 	 	static 
 		 	v8::Local<v8::Value> set(const bool i){
-		 		return v8::Boolean::New(ISOLATE,i);
+		 		return JS_BOOLEAN(i);
 		 	}
 	 	static 
 	 		std::string validate(const v8::Local<v8::Value> &i){
@@ -476,9 +471,6 @@ template<>
 	 		}
 	 };
 const char Linker<bool>::tag [] = "boolean";
-template<>
-	 class Linker<const bool>:public Linker<bool>{};
-
 
 template<>
 	 class Linker<void>{
