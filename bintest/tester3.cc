@@ -1,4 +1,3 @@
-
 #include <node.h>
 
 #include "../src/hedon.h"
@@ -47,14 +46,14 @@ int superCallback (int(*psfunc)(int(*)()) , int(*pfunc)() ){
 }
 
 void Init( v8::Handle<v8::Object> exports) {
-		NODE_SET_METHOD(exports,"callback",HEDON::BIND(callback));
-		NODE_SET_METHOD(exports,"recallback",HEDON::BIND(recallback));
-		NODE_SET_METHOD(exports,"callback0",HEDON::BIND(callback0));
-		NODE_SET_METHOD(exports,"callback1",HEDON::BIND(callback1));
-		NODE_SET_METHOD(exports,"callback2",HEDON::BIND(callback2));
-		NODE_SET_METHOD(exports,"callback3",HEDON::BIND(callback3));
-		NODE_SET_METHOD(exports,"callbackChar",HEDON::BIND(callbackChar));
-		NODE_SET_METHOD(exports,"super",HEDON::BIND(superCallback));
+		HEDON::EXPORT(exports,callback);
+		HEDON::EXPORT(exports,recallback);
+		HEDON::EXPORT(exports,callback0);
+		HEDON::EXPORT(exports,callback1);
+		HEDON::EXPORT(exports,callback2);
+		HEDON::EXPORT(exports,callback3);
+		HEDON::EXPORT(exports,callbackChar);
+		HEDON::EXPORT(exports,superCallback);
 }
 
 

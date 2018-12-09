@@ -24,6 +24,7 @@
 
 #ifndef ___PURE__HEDON__BIND___H___
 #define ___PURE__HEDON__BIND___H___
+
 #include <string>
 
 namespace HEDON {
@@ -44,10 +45,13 @@ namespace HEDON {
 #define JS_VALUE \
 		v8::Local<v8::Value>
 
+#define JS_EXPORTS \
+		v8::Handle<v8::Object>
+
 #define JS_ARGS \
 	v8::FunctionCallbackInfo<v8::Value>
 
-#define JS_OBJECT \
+#define JS_OBJECT_TYPE \
 		v8::Local<v8::Object>
 
 #define JS_ARRAY(N_NUMBER_OF_ELEMENTS) \
@@ -77,6 +81,8 @@ namespace HEDON {
 #define JS_NEW_FUNCTION_TEMPLATE(CALLBACK) \
 			v8::FunctionTemplate::New(ISOLATE,CALLBACK)
 
+#define JS_RETURN(ARGUMENTS, VALUE) ARGUMENTS.GetReturnValue().Set(VALUE)
+
 #define JS_THROW(ERROR_TXT_VALUE) \
     		ISOLATE->ThrowException( \
           		v8::Exception::Error( \
@@ -88,7 +94,7 @@ namespace HEDON {
 	Binder<decltype(I),I>::bind
 
 #define EXPORT(EXP,I) \
-	HEDON::Binder<decltype(I),I>::exporter(EXP,#I)
+	Binder<decltype(I),I>::exporter(EXP,#I)
 
 /*
 	Counter
@@ -164,10 +170,6 @@ template <typename ... ARGS >
 
 
 
-typedef 
-	void (* BINDING_FN_TYPE)(const v8::FunctionCallbackInfo<v8::Value> &);
-
-
 /*
 	caching
 */
@@ -191,26 +193,26 @@ template<typename FNTYPE,FNTYPE * fn , int ...Is>
 template<typename TYPE> 
 	class Link {
 	public:
-	 	static TYPE (*getter)(const v8::Local<v8::Value> &,v8::Isolate *);
-	 	static v8::Local<v8::Value> (*setter)(const TYPE,v8::Isolate *);
-	 	static std::string (*validator)(const v8::Local<v8::Value> &,v8::Isolate *);
+	 	static TYPE (*getter)(const JS_VALUE &,v8::Isolate *);
+	 	static JS_VALUE (*setter)(const TYPE,v8::Isolate *);
+	 	static std::string (*validator)(const JS_VALUE &,v8::Isolate *);
 	 	static char * tag;
 	 };
 
 template<typename TYPE> 
 	 TYPE 
 	 	(*Link<TYPE>::getter)
-	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
+	 		(const JS_VALUE &,v8::Isolate *) = nullptr;
 
 template<typename TYPE> 
-	 v8::Local<v8::Value>
+	 JS_VALUE
 	 	(*Link<TYPE>::setter)
 	 		(TYPE,v8::Isolate *) = nullptr;
 
 template<typename TYPE> 
 	 std::string 
 	 	(*Link<TYPE>::validator)
-	 		(const v8::Local<v8::Value> &,v8::Isolate *) = nullptr;
+	 		(const JS_VALUE &,v8::Isolate *) = nullptr;
 
 template<typename TYPE> 
 	char * Link<TYPE>::tag = nullptr;
@@ -220,18 +222,18 @@ template<typename TYPE>
 	public:
 		static const char tag [];
 	 	static 
-	 		TYPE get(const v8::Local<v8::Value> & i ){
+	 		TYPE get(const JS_VALUE & i ){
 	 			return Link<TYPE>::getter(i,ISOLATE);
 	 		}
 	 	static 
-	 		v8::Local<v8::Value> set(const TYPE i){
+	 		JS_VALUE set(const TYPE i){
 	 			if(Link<TYPE>::setter != nullptr){
 	 				return Link<TYPE>::setter(i,ISOLATE);
 	 			}
 	 			return JS_UNDEFINED;
 	 		}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &i){
+	 		std::string validate(const JS_VALUE &i){
 	 			std::string str;
 	 			if(Link<TYPE>::validator != nullptr){
 	 				str = Link<TYPE>::validator(i,ISOLATE);
@@ -250,7 +252,7 @@ template<typename TYPE>
 	public:
 		static const char tag [];
 		static 
-			TYPE * get(const v8::Local<v8::Value> &i){
+			TYPE * get(const JS_VALUE &i){
 				int64_t m = i->NumberValue();
 				if(i->IsNull() || (m == 0) ){
 					return nullptr;
@@ -258,12 +260,12 @@ template<typename TYPE>
 				return reinterpret_cast<TYPE *>(m);
 			};
 			static 
-				v8::Local<v8::Value> set(const TYPE * data){
+				JS_VALUE set(const TYPE * data){
 					int64_t i = (int64_t)data;
 					return JS_NUMBER(i);
 				}
 	 		static
-	 			std::string validate(const v8::Local<v8::Value> &i){
+	 			std::string validate(const JS_VALUE &i){
 	 			std::string str;
 	 			if(!i->IsNumber() && !i->IsNull()){
 	 				str += "invalid value, should be a pointer.";
@@ -278,14 +280,14 @@ template<>
 	 class Linker<std::string>{
 	 public:
 	 	static const char tag [];
-	 	static std::string get(const v8::Local<v8::Value> &i){
+	 	static std::string get(const JS_VALUE &i){
 	 		v8::String::Utf8Value str(ISOLATE, i);
 			return std::string(*str);
 	 	}
-	 	static v8::Local<v8::Value> set(const std::string & str){
+	 	static JS_VALUE set(const std::string & str){
 	 		return JS_STRING(str.data());
 	 	}
-	 	static std::string validate(const v8::Local<v8::Value> &i){
+	 	static std::string validate(const JS_VALUE &i){
 	 		std::string str;
 	 		if(!i->IsString()){
 	 				str += "invalid value, should be a string.";
@@ -300,14 +302,14 @@ template<>
 	 class Linker<char *>{
 	 public:
 	 	static const char tag [];
-	 	static char * get(const v8::Local<v8::Value> &i){
+	 	static char * get(const JS_VALUE &i){
 	 		v8::String::Utf8Value str(ISOLATE,i);
 			return *str;
 	 	}
-	 	static v8::Local<v8::Value> set(const char * data){
+	 	static JS_VALUE set(const char * data){
 	 		return JS_STRING(data);
 	 	}
-	 	static std::string validate(const v8::Local<v8::Value> &i){
+	 	static std::string validate(const JS_VALUE &i){
 	 		return Linker<std::string>::validate(i);
 	 	}
 	 };
@@ -317,13 +319,13 @@ template<>
 	 class Linker<unsigned char *>{
 	 public:
 	 	static const char tag [];
-	 	static unsigned char * get(const v8::Local<v8::Value> &i){
+	 	static unsigned char * get(const JS_VALUE &i){
 			return (unsigned char*) Linker<char *>::get(i);
 	 	}
-	 	static v8::Local<v8::Value> set(const unsigned char * data){
+	 	static JS_VALUE set(const unsigned char * data){
 	 		return Linker<char *>::set((char *)data);
 	 	}
-	 	static std::string validate(const v8::Local<v8::Value> &i){
+	 	static std::string validate(const JS_VALUE &i){
 	 		std::string str;
 	 		if(!i->IsString()){
 	 				str += "invalid value, should be a string.";
@@ -339,15 +341,15 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static 
-	 		double get(const v8::Local<v8::Value> &i){
+	 		double get(const JS_VALUE &i){
 		 		return i->NumberValue();
 		 	}
 	 	static 
-		 	v8::Local<v8::Value> set(const double i){
+		 	JS_VALUE set(const double i){
 		 		return JS_NUMBER(i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &i){
+	 		std::string validate(const JS_VALUE &i){
 	 			std::string str;
 	 			if(!i->IsNumber()){
 	 				str += "invalid value, should be a number.";
@@ -363,15 +365,15 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static 
-	 		float get(const v8::Local<v8::Value> &i){
+	 		float get(const JS_VALUE &i){
 		 		return i->NumberValue();
 		 	}
 	 	static 
-		 	v8::Local<v8::Value> set(const float i){
+		 	JS_VALUE set(const float i){
 		 		return JS_NUMBER(i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &i){
+	 		std::string validate(const JS_VALUE &i){
 	 			return Linker<double>::validate(i);
 	 		}
 	 };
@@ -385,15 +387,15 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static 
-	 		int32_t get(const v8::Local<v8::Value> &i){
+	 		int32_t get(const JS_VALUE &i){
 		 		return i->Int32Value();
 		 	}
 	 	static 
-		 	v8::Local<v8::Value> set(const int32_t i){
+		 	JS_VALUE set(const int32_t i){
 		 		return JS_NUMBER(i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &i){
+	 		std::string validate(const JS_VALUE &i){
 	 			std::string str;
 	 			if(!i->IsInt32()){
 	 				str += "invalid value, should be a number with a 32bit int value.";
@@ -409,15 +411,15 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static 
-	 		uint32_t get(const v8::Local<v8::Value> &i){
+	 		uint32_t get(const JS_VALUE &i){
 		 		return i->Uint32Value();
 		 	}
 	 	static 
-		 	v8::Local<v8::Value> set(const uint32_t i){
+		 	JS_VALUE set(const uint32_t i){
 		 		return JS_NUMBER(i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &i){ 
+	 		std::string validate(const JS_VALUE &i){ 
 	 			std::string str;
 	 			if(!i->IsUint32()){
 	 				str += "invalid value, should be a number with an unsigned 32bit int value.";
@@ -433,15 +435,15 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static 
-	 		int64_t get(const v8::Local<v8::Value> &i){
+	 		int64_t get(const JS_VALUE &i){
 		 		return i->IntegerValue();
 		 	}
 	 	static 
-		 	v8::Local<v8::Value> set(const int64_t i){
+		 	JS_VALUE set(const int64_t i){
 		 		return JS_NUMBER(i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &i){
+	 		std::string validate(const JS_VALUE &i){
 	 			return Linker<double>::validate(i);
 	 		}
 	 };	 
@@ -454,15 +456,15 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static 
-	 		bool get(const v8::Local<v8::Value> &i){
+	 		bool get(const JS_VALUE &i){
 		 		return i->BooleanValue();
 		 	}
 	 	static 
-		 	v8::Local<v8::Value> set(const bool i){
+		 	JS_VALUE set(const bool i){
 		 		return JS_BOOLEAN(i);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &i){
+	 		std::string validate(const JS_VALUE &i){
 	 			std::string str;
 	 			if(!i->IsBoolean()){
 	 				str += "invalid value, should be a boolean.";
@@ -477,37 +479,71 @@ template<>
 	 public:
 	 	static const char tag [];
 	 	static 
-	 		void get(const v8::Local<v8::Value> &){
+	 		void get(const JS_VALUE &){
 		 		return;
 		 	}
 	 	static 
-		 	v8::Local<v8::Value> set( void ){
+		 	JS_VALUE set( void ){
 		 		return v8::Null(ISOLATE);
 		 	}
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
+	 		std::string validate(const JS_VALUE &){
 	 			return std::string();
 	 		}
 	 };
 const char Linker<void>::tag [] = "void";
 
+
+
+template<typename TYPE,int N> 
+	 class Linker<TYPE[N]>{
+	 public:
+	 	static const char tag [];
+	 	static 
+	 		TYPE * get(const JS_VALUE & i){
+	 			return nullptr;
+		 	}
+	 	static 
+		 	JS_VALUE set( const TYPE array [N]){
+	 			JS_ARRAY_TYPE vArray = JS_ARRAY(N);
+				  if (vArray.IsEmpty()){
+				  	return vArray;
+				  }
+				  for(int i = 0  ;  i < N ; i++){
+				  	vArray->Set(i, Linker<TYPE>::set(array[i]));
+				  }
+		 		return vArray;
+		 	}
+	 	static 
+	 		std::string validate(const JS_VALUE & i){
+	 			return std::string("invalid by default!");
+	 		}
+	 };
+
+template<typename TYPE,int N> 	 
+const char Linker<TYPE[N]>::tag [] = "array";
+
+
+
+
 template<typename TYPE> 
 	class Linker<const TYPE>: public Linker<TYPE>{};
 
 
+
 template<typename FNTYPE , FNTYPE fn ,typename TYPE , int ...Is> 
-	class Linker_t : public Linker<TYPE>{};
+	class LinkerCore : public Linker<TYPE>{};
 
 template<typename FNTYPE , FNTYPE fn ,int ...Is >
-class Linker_t<FNTYPE,fn,std::string,Is...>{
+class LinkerCore<FNTYPE,fn,std::string,Is...>{
 public:
 	static std::string 
-		get(const v8::Local<v8::Value> & i){ 
+		get(const JS_VALUE & i){ 
 			return Cache<FNTYPE,fn,std::string,Is...>::cached 
 			 		= Linker<std::string>::get(i);
 		};
 	static 
-	 	std::string validate(const v8::Local<v8::Value> &){
+	 	std::string validate(const JS_VALUE &){
 	 			return std::string();
 	 		}
 };
@@ -607,14 +643,14 @@ template< typename M>
 	linker
 */
 template<typename FNTYPE , FNTYPE fn ,typename R, typename ...ARGS ,int ...Is >
-class Linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
+class LinkerCore<FNTYPE,fn,R(*)(ARGS...),Is...>{
 		public:
 	typedef R(&rtntype)(ARGS...);
 		 static 
-	 		rtntype get(const v8::Local<v8::Value> & i){
+	 		rtntype get(const JS_VALUE & i){
 	 			v8::Local<v8::Function> callback = v8::Local<v8::Function>::Cast(i);
 	 			CallbackCache<FNTYPE,fn,Is...>::cached.Reset(ISOLATE,callback);
-	 			return Linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>::wrapper;
+	 			return LinkerCore<FNTYPE,fn,R(*)(ARGS...),Is...>::wrapper;
 	 		}
 	 	static 
 	 		R wrapper (ARGS...args){
@@ -642,74 +678,62 @@ class Linker_t<FNTYPE,fn,R(*)(ARGS...),Is...>{
 
 		};
 	 	static 
-	 		std::string validate(const v8::Local<v8::Value> &){
+	 		std::string validate(const JS_VALUE &){
 	 			return std::string();
 	 		}
 };
 
-std::string toString(int i){
-	std::string str;
-	if(i<0){
-		str = '-';
-		i = -i;
-	}
-	do{
-		char c =  '0' + (i%10);
-		str += c;
-		i = i/10;
-	}while(i);
-	return str;
-}
+
 
 
 template<typename TYPE, TYPE data> 
-	 class Binder_t {
+	 class BinderCore {
 	 public:
 	 	static 
 	 		void bind (const JS_ARGS & arguments) {
-			arguments
-				.GetReturnValue()
-				.Set(Linker<TYPE>::set(data));
+			JS_RETURN(arguments, Linker<TYPE>::set(data));
 			return;
 	 		};
 	 };
 
 template<typename TYPE, int N, TYPE (&array)[N]> 
-	 class Binder_t<TYPE[N],array>{
+	 class BinderCore<TYPE[N],array>{
 	 public:
-	 	static 
-	 		void bind (const JS_ARGS & arguments) {
-			  v8::Handle<v8::Array> v8Array = v8::Array::New(arguments.GetIsolate(),N);
-			  if (v8Array.IsEmpty()){
-			  	return;
+	 	static JS_VALUE generate(){
+	 		JS_ARRAY_TYPE vArray = JS_ARRAY(N);
+			  if (vArray.IsEmpty()){
+			  	return vArray;
 			  }
 			  for(int i = 0  ;  i < N ; i++){
-			  	v8Array->Set(i, Linker<TYPE>::set(array[i]));
+			  	vArray->Set(i, Linker<TYPE>::set(array[i]));
 			  }
-			  arguments
-				.GetReturnValue()
-				.Set(v8Array);
+	 		return vArray;
+	 	};
+
+	 	static 
+	 		void bind (const JS_ARGS & arguments) {
+	 		  JS_VALUE value = BinderCore<TYPE[N],array>::generate(); 
+			  JS_RETURN(arguments, value);
+			  return;
 	 		};
 	};
 template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
-	class Binder_t<R(ARGS...),fn>{
+	class BinderCore<R(ARGS...),fn>{
 		 public:
 		typedef R(fntype)(ARGS...);
 		static 
 			void bind (const JS_ARGS & arguments) {
-				if(!Binder_t<fntype,fn>::validate(arguments)){
+				if(!BinderCore<fntype,fn>::validate(arguments)){
 					return;
 				}				
 				R value = 
-				 Binder_t<fntype,fn>
+				 BinderCore<fntype,fn>
 				 ::invoke(arguments,Indexes<ARGS...>());
-				arguments
-				.GetReturnValue()
-				.Set(Linker<R>::set(value));
+				JS_RETURN(arguments, Linker<R>::set(value));
 			};
 		template<int ...Is> static 
 			R invoke (const JS_ARGS & arguments ,Sequence<Is...>){
-				return fn( Linker_t<fntype,fn,ARGS,Is>::get(arguments[Is])...);
+				return fn( LinkerCore<fntype,fn,ARGS,Is>::get(arguments[Is])...);
 			};
 
 		template<int ...Is> static 
@@ -717,12 +741,12 @@ template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 				std::string res;
 				std::string
 				 strs [] = {
-				 	Linker_t<fntype,fn,ARGS,Is>::validate(arguments[Is])...
+				 	LinkerCore<fntype,fn,ARGS,Is>::validate(arguments[Is])...
 				 };
 				 int n = Counter<ARGS...>::n;
 				 for(int i = 0 ; i < n ; i++ )
 				 if(!strs[i].empty()){
-				 	res = "(#" +  toString(i)+ ")" + strs[i];
+				 	res = "(#" +  std::to_string(i)+ ")" + strs[i];
 				 };
 				 return res;
 			};
@@ -749,39 +773,47 @@ template<typename R, typename ...ARGS, R(&&fn)(ARGS...)>
 			int length = arguments.Length(),
 			 	n = Counter<ARGS...>::n ;
 			std::string str;
-			v8::Isolate * isolate;
 
 			if(n > length){
-				str = "missing "+ toString(n-length) +" arguments.";
+				str = "missing "+ std::to_string(n-length) +" arguments.";
 			}
 			else if(n  < length ){
-				str = "to many arguments, overflow by" + toString(length-n) +".";
+				str = "to many arguments, overflow by" + std::to_string(length-n) +".";
 			} else {
-				str = Binder_t<fntype,fn>
+				str = BinderCore<fntype,fn>
 				 ::validateArgs(arguments,Indexes<ARGS...>());
 			}
 
 			if(str.empty()){
 				return true;
 			}
-			str =  Binder_t<R(ARGS...),fn>::tag()+ "Error:"   + str;
-			isolate =  arguments.GetIsolate();
-			isolate->ThrowException(
-				v8::String::NewFromUtf8(isolate,str.data())
-				);
+			str =  BinderCore<R(ARGS...),fn>::tag()+ "Error:"   + str;
+				JS_THROW(str.data());
 			return false;
 			};
 	};
 
-template<typename TYPE, TYPE data> class Binder:public Binder_t<TYPE,data> {};
+template<typename TYPE, TYPE data> class Binder:public BinderCore<TYPE,data> {
+public:
+	static void exporter (const JS_OBJECT_TYPE & exportObj ,const char * key) {
+		JS_VALUE vKey = JS_STRING(key);
+		exportObj->Set(vKey,Linker<TYPE>::set(data));
+	}
+};
 
 template< typename R ,typename ...ARGS, R(&&fn)(ARGS...)>
 class Binder <R(ARGS...),fn> {
 		public:
 		typedef Suggest<R>(fntype)(Suggest<ARGS> ...);
 
+		static void exporter (const JS_OBJECT_TYPE & exportObj ,const char * key) {
+			NODE_SET_METHOD(exportObj,
+				key,
+				Binder<R(ARGS...),fn>::bind);
+		};
+
 		static void bind (const JS_ARGS & arguments) {
-			return Binder_t<fntype,Binder<R(ARGS...),fn>::wrap>::bind(arguments);
+			return BinderCore<fntype,Binder<R(ARGS...),fn>::wrap>::bind(arguments);
 		};
 		
 		static Suggest<R> wrap(Suggest<ARGS> ... args){
@@ -805,10 +837,17 @@ class Binder<void(ARGS...),fn> {
 
 		typedef Suggest<void>(fntype)(Suggest<ARGS> ...);
 
+		static void exporter (const JS_OBJECT_TYPE & exportObj ,const char * key) {
+			NODE_SET_METHOD(exportObj,
+				key,
+				Binder<void(ARGS...),fn>::bind);
+		};
+
 		static void bind (const JS_ARGS & arguments) {
 			return Binder<fntype,Binder<void(ARGS...),fn>::wrap>::bind(arguments);
 		};
 		
+
 		static Suggest<void> wrap(Suggest<ARGS> ... args){
 			fn( Replacer< Suggest<ARGS> ,ARGS  >::replace(args)...);
 			return Replacer< void,Suggest<void> >::replace();

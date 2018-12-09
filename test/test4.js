@@ -9,13 +9,13 @@ describe('tester4 - statics', ()=>{
 		next();
 	});
 	it('Should return a static int array',(done)=>{ 
-		const fn = testers.tester4.staticArray;
-		expect(fn()).to.eql([3,4,6,7,8,99,10,676]);
+		const staticArray = testers.tester4.staticArray;
+		expect(staticArray).to.eql([3,4,6,7,8,99,10,676]);
 		done(); 
 	});
 		it('Should return a static int',(done)=>{ 
-		const fn = testers.tester4.i;
-		expect(fn()).to.be.equal(5558);
+		const i = testers.tester4.i;
+		expect(i).to.be.equal(5558);
 		done(); 
 	});
 });

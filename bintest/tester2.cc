@@ -33,11 +33,11 @@ const char * getString2( const char * m){
 
 void Init( v8::Handle<v8::Object> exports) {
 	i.data = 502;
-	NODE_SET_METHOD(exports, "getString", HEDON::BIND(getString));
-	NODE_SET_METHOD(exports, "getString2", HEDON::BIND(getString2));
-	NODE_SET_METHOD(exports, "getValue", HEDON::BIND(getValue));
-	NODE_SET_METHOD(exports, "getPointer", HEDON::BIND(getPointer));
-	NODE_SET_METHOD(exports, "getValueFromPointer", HEDON::BIND(getValueFromPointer));
+	HEDON::EXPORT(exports, getString);
+	HEDON::EXPORT(exports, getString2);
+	HEDON::EXPORT(exports, getValue);
+	HEDON::EXPORT(exports, getPointer);
+	HEDON::EXPORT(exports, getValueFromPointer);
 }
 
 

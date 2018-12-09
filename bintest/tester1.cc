@@ -29,11 +29,11 @@ int test10(
 }
 
 void Init( v8::Handle<v8::Object> exports) {
-   NODE_SET_METHOD(exports, "test0", HEDON::BIND(test0));
-   NODE_SET_METHOD(exports, "test1", HEDON::BIND(test1));
-   NODE_SET_METHOD(exports, "test2", HEDON::BIND(test2));
-   NODE_SET_METHOD(exports, "test3", HEDON::BIND(test3));
-   NODE_SET_METHOD(exports, "test10", HEDON::BIND(test10));
+  HEDON::EXPORT(exports, test0);
+  HEDON::EXPORT(exports, test1);
+  HEDON::EXPORT(exports, test2);
+  HEDON::EXPORT(exports, test3);
+  HEDON::EXPORT(exports, test10);
 }
 
 
