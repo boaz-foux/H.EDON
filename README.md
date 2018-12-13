@@ -21,7 +21,6 @@ all is needed is to add the following lines to binding.gyp :
 
 hedon should be include in the following hierarchy
 ``` cpp
-#include <v8.h>
 #include <node.h>
 /*
     ...
@@ -39,6 +38,8 @@ double function(float i , double j, int k);
 
 void Init( v8::Handle<v8::Object> exports) {
     NODE_SET_METHOD(exports, "example", HEDON::BIND(function) );
+    /* or  */
+    HEDON::EXPORT(exports, function);
   }
 NODE_MODULE(hello, Init);
 
