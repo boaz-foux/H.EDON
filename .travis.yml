@@ -1,0 +1,25 @@
+language: node_js
+node_js:
+  - "10"
+  - "8.1.2"
+  - "7"
+  - "6"
+os:
+  - linux
+  - osx
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+
+      
+before_script:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CC=clang;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CXX=clang++;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LINK=clang++;fi
+  - g++ -v
+  - clang -v
+  - npm install -g node-gyp@latest
+  - node-gyp -v
+  
