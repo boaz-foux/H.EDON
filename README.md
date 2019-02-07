@@ -1,4 +1,4 @@
-# HEDON [![hedon tests](https://travis-ci.org/butterfly0x0/HEDON.svg?branch=master)](https://travis-ci.org/softmicro0x1/HEDON/branches)
+# HEDON [![hedon tests](https://travis-ci.org/butterfly0x0/HEDON.svg?branch=master)](https://travis-ci.org/butterfly0x0/HEDON/branches)
 this project was established to make life easier & simpler for the little worker who need to bind c++ with node.
 
 #### the meaning of HEDON:
