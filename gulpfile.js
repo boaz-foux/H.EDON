@@ -1,8 +1,6 @@
 const 
 	fs = require('fs'),
-	path = require('path'),
 	gulp = require('gulp'),
-	concat = require('gulp-concat'),
   del = require('del'),
   spawn = require("child_process").spawnSync;
 

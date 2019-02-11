@@ -1,4 +1,5 @@
 # HEDON [![hedon tests](https://travis-ci.org/butterfly0x0/HEDON.svg?branch=master)](https://travis-ci.org/butterfly0x0/HEDON/branches)
+HEDON isn't production ready yet.
 this project was established to make life easier & simpler for the little worker who need to bind c++ with node.
 
 #### the meaning of HEDON:
@@ -46,18 +47,27 @@ NODE_MODULE(hello, Init);
 ```
 
 
+(currently in development)
 getters add setters are adjustable like so:
 ``` cpp
-CLASS_TYPE get(const v8::Local<v8::Value> & input){ /* ... */ }
-v8::Local<v8::Value> set(v8::Isolate * isolate ,CLASS_TYPE _class) { /* ... */ }
-/*
-    ...
-*/
-#include "hedon.h"
-HEDON::GETTER(CLASS_TYPE ,get);
-HEDON::SETTER(CLASS_TYPE ,set);
+struct test{
+	int i;
+};
+
+test getStruct (){
+	test t;
+	return t;
+}
+
+void Init( v8::Handle<v8::Object> exports) {
+	BIND_STRUCT(test
+			,BIND_STRUCT_KEY(test,i)
+		);
+    HEDON::EXPORT(exports, getStruct);
+}
+
+NODE_MODULE(hello, Init);
 ``` 
 
-HEDON has been developed mainly on OS X ( el capitan ).
 
 

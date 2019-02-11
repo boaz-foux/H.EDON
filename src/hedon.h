@@ -1,7 +1,7 @@
 /*
 *	MIT License
 *	
-*	Copyright (c) 2018 Boaz Foux
+*	Copyright (c) 2019 Boaz Foux
 *	
 *	Permission is hereby granted, free of charge, to any person obtaining a copy
 *	of this software and associated documentation files (the "Software"), to deal
@@ -26,15 +26,17 @@
 #define ___PURE__HEDON__BIND___H___
 
 #include <string>
+#include <utility>
+#include <tuple>
+
 
 namespace HEDON {
 
-/* should be refactored*/
-#define GETTER(C,GET) Link<C>::getter = GET
-#define SETTER(C,SET) Link<C>::setter = SET
-#define VALIDATOR(C,VALIDATE) Link<C>::validator = VALIDATE
-#define TAG(C,TAG) Link<C>::tag = TAG
-/* should be refactored*/
+#define GETTER(C,GET) HEDON::Link<C>::getter = GET
+#define SETTER(C,SET) HEDON::Link<C>::setter = SET
+#define VALIDATOR(C,VALIDATE) HEDON::Link<C>::validator = VALIDATE
+#define TAG(C,TAG) HEDON::Link<C>::tag = TAG
+
 
 #define ISOLATE \
 	v8::Isolate::GetCurrent()
@@ -50,6 +52,9 @@ namespace HEDON {
 
 #define JS_ARGS \
 	v8::FunctionCallbackInfo<v8::Value>
+
+#define JS_OBJECT \
+		v8::Object::New(ISOLATE)
 
 #define JS_OBJECT_TYPE \
 		v8::Local<v8::Object>
@@ -98,6 +103,21 @@ namespace HEDON {
 
 #define EXPORT(EXP,I) \
 	Binder<decltype(I),I>::exporter(EXP,#I)
+
+ 
+#define BIND_STRUCT_KEY(STRUCT, KEY) \
+	std::make_tuple< \
+		char *, \
+		HEDON::Suggest<decltype(STRUCT::KEY)(*)(const STRUCT *)>, \
+		void (*)(STRUCT *, const decltype(STRUCT::KEY) &)\
+		> ( \
+	#KEY, \
+	[](const STRUCT * ss) -> HEDON::Suggest<decltype(STRUCT::KEY)> { return ss->STRUCT::KEY; }, \
+	[](STRUCT * ss, const HEDON::Suggest<decltype(STRUCT::KEY)> & value ) -> void {  ss->STRUCT::KEY = value; } \
+	)
+
+#define BIND_STRUCT( STRUCT, ... ) HEDON::LinkGenerator<STRUCT>::generateAll(#STRUCT , std::make_tuple( __VA_ARGS__) )
+
 
 /*
 	Counter
@@ -212,7 +232,6 @@ std::string toString(int i){
 /*
 	linking
 */
-
 template<typename TYPE> 
 	class Link {
 	public:
@@ -706,6 +725,104 @@ class LinkerCore<FNTYPE,fn,R(*)(ARGS...),Is...>{
 	 		}
 };
 
+/*
+	link generating
+*/
+template<typename TYPE>
+class LinkGenerator {
+	private:
+	template<typename T>
+	using singleTupleType = typename std::tuple<char *, T(*)(const TYPE *),void (*)(TYPE *, const T &)>;
+	template<typename ...Ts>
+	using tupleType = typename std::tuple< LinkGenerator<TYPE>::singleTupleType<Ts>...>;
+
+
+	template<typename ...TYPEs>
+	class Generator {
+		public: 
+			static tupleType< TYPEs... > deepTuple;
+		private:
+			template<typename T, int I>
+			static bool deepGet(TYPE * type, const JS_VALUE & value){
+				std::get<2>(std::get<I>(deepTuple))( type, Linker<T>::get(value) );
+				return true;
+			}
+
+			template<typename T, int I>
+			static JS_VALUE deepSet(const TYPE & type){
+				return Linker<T>::set( std::get<1>(std::get<I>(deepTuple))( &type) );
+			}
+
+
+			template<int ...Is>
+			static  TYPE getDeep(const JS_VALUE & value, Sequence<Is...> ){
+				TYPE type;
+				JS_OBJECT_TYPE object = value->ToObject();
+				std::string  strings [] = { std::string(std::get<0>(std::get<Is>(deepTuple)))... };
+				JS_VALUE values [] = { object->Get(JS_STRING(strings[Is].data()) )... };
+				bool flags []  = { LinkGenerator<TYPE>::Generator<TYPEs...>::deepGet<TYPEs,Is>(&type,values[Is])... } ;
+				return type;
+			}
+
+			template<int ...Is>
+			static  JS_VALUE setDeep(const TYPE & type, Sequence<Is...> ){
+				JS_OBJECT_TYPE object = JS_OBJECT;
+				int n = Counter<TYPEs...>::n;
+				std::string  strings [] = { std::string(std::get<0>(std::get<Is>(deepTuple)))... };
+				JS_VALUE values [] = { LinkGenerator<TYPE>::Generator<TYPEs...>::deepSet<TYPEs,Is>(type)... };
+				for (int i = 0; i < n; ++i) {
+					object->Set(JS_STRING(strings[i].data()),values[i]);
+				};
+	 			return object;
+			};
+
+			template<int ...Is>
+			 static std::string validateDeep(const JS_VALUE & value, Sequence<Is...>){
+			 	if(!value->IsObject()){
+			 		return std::string("not an object.");
+			 	}
+			 	int n = Counter<TYPEs...>::n;
+				JS_OBJECT_TYPE object = value->ToObject();
+				std::string  strings [] = { std::string(std::get<0>(std::get<Is>(deepTuple)))... };
+				JS_VALUE values [] = { object->Get(JS_STRING(strings[Is].data()) )... };
+				std::string errors [] = { Linker<TYPEs>::validate(values[Is])... };
+				for (int i = 0; i < n; ++i) {
+					if(!errors[i].empty()){
+						return errors[i];		
+					}
+				}
+			 	return std::string("");
+			 }
+
+		public: 
+		static  TYPE get(const JS_VALUE & value, v8::Isolate * isolate ){
+			return LinkGenerator<TYPE>::Generator<TYPEs...>::getDeep(value,Indexes<TYPEs...>());
+		};
+	 	static JS_VALUE set(const TYPE type, v8::Isolate *){
+	 		return LinkGenerator<TYPE>::Generator<TYPEs...>::setDeep(type,Indexes<TYPEs...>());
+	 	};
+	 	static std::string validate(const JS_VALUE & value, v8::Isolate *){
+	 		return LinkGenerator<TYPE>::Generator<TYPEs...>::validateDeep(value,Indexes<TYPEs...>());
+	 	};	
+	};
+	public:
+	template<typename ...TYPEs>
+	static void generateAll (char * tag, typename LinkGenerator<TYPE>::tupleType< TYPEs... > tuple){
+		LinkGenerator<TYPE>::Generator<TYPEs...>::deepTuple = tuple;
+		Link<TYPE>::tag = tag;
+		Link<TYPE>::getter = LinkGenerator<TYPE>::Generator<TYPEs...>::get;
+		Link<TYPE>::setter = LinkGenerator<TYPE>::Generator<TYPEs...>::set;
+		Link<TYPE>::validator = LinkGenerator<TYPE>::Generator<TYPEs...>::validate;
+	};
+};
+
+template<typename TYPE>
+template< typename ...TYPEs>
+// TODO: change typename to commented code
+// LinkGenerator<TYPE>::tupleType<TYPEs...> 
+std::tuple<   std::tuple<char *, TYPEs(*)(const TYPE *),void (*)(TYPE *, const TYPEs &)>... >
+LinkGenerator<TYPE>::Generator<TYPEs... >::deepTuple;
+
 
 
 
@@ -876,9 +993,6 @@ class Binder<void(ARGS...),fn> {
 			return Replacer< void,Suggest<void> >::replace();
 		};
 };
-
-
-
 
 
 
