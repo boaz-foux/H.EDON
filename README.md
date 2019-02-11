@@ -1,4 +1,4 @@
-# HEDON [![hedon tests](https://travis-ci.org/butterfly0x0/HEDON.svg?branch=master)](https://travis-ci.org/butterfly0x0/HEDON/branches)
+# HEDON [![hedon tests](https://travis-ci.org/butterfly0x0/HEDON.svg?branch=0.7.0)](https://travis-ci.org/butterfly0x0/HEDON/branches)
 HEDON isn't production ready yet.
 this project was established to make life easier & simpler for the little worker who need to bind c++ with node.
 
