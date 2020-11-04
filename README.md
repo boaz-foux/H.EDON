@@ -1,3 +1,5 @@
+# DEPRECATED PROJECT - MOVED FROM PRIVATE REPO AS AN EXAMPLE PROJECT
+
 # HEDON [![hedon tests](https://travis-ci.org/boaz-foux/HEDON.svg?branch=master)](https://travis-ci.org/boaz-foux/HEDON/branches)
 HEDON isn't production ready yet.
 this project was established to make life easier & simpler for the little worker who need to bind c++ with node.
